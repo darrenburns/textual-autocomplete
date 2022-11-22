@@ -3,18 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Callable
 
-from rich import Console
-from rich.console import ConsoleOptions, RenderableType
+from rich.console import Console, ConsoleOptions, RenderableType
 from rich.text import Text
 from textual import events
-from textual.app import ComposeResult
 from textual.css.styles import RenderStyles
 from textual.reactive import watch
 from textual.widget import Widget
 from textual.widgets import Input
 
 
-class AutocompleteError(Exception):
+class AutoCompleteError(Exception):
     pass
 
 
@@ -22,38 +20,25 @@ class DropdownRender:
     def __init__(
         self,
         filter: str,
-        matches: Iterable[CompletionCandidate],
+        matches: Iterable[Candidate],
         highlight_index: int,
         component_styles: dict[str, RenderStyles],
     ) -> None:
         self.filter = filter
         self.matches = matches
         self.highlight_index = highlight_index
-        self.component_styles = component_styles
-        self._highlight_item_style = self.component_styles.get(
-            "search-completion--selected-item"
-        ).rich_style
 
     def __rich_console__(self, console: Console, options: ConsoleOptions):
         matches = []
-        for index, match in enumerate(self.matches):
-            if not match.secondary:
-                secondary_text = self._find_secondary_text(match.original_object)
-            else:
-                secondary_text = match.secondary
-            match = Text.from_markup(
-                f"{match.primary:<{options.max_width - 3}}[dim]{secondary_text}"
-            )
-            matches.append(match)
-            if self.highlight_index == index:
-                match.stylize(self._highlight_item_style)
-            match.highlight_regex(self.filter, style="black on #4EBF71")
-
+        for match in self.matches:
+            candidate_text = Text(match.main)
+            candidate_text.highlight_words([self.filter], style="on yellow")
+            matches.append(candidate_text)
         return Text("\n").join(matches)
 
 
 @dataclass
-class AutocompleteOption:
+class Candidate:
     """A single option appearing in the autocompletion dropdown. Each option has up to 3 columns.
 
     Args:
@@ -65,12 +50,12 @@ class AutocompleteOption:
             The right column often contains some metadata relating to this option.
 
     """
-    left: str = ""
     main: str = ""
-    right: str = ""
+    left_meta: str = ""
+    right_meta: str = ""
 
 
-class Autocomplete(Widget):
+class AutoComplete(Widget):
     """An autocompletion dropdown widget. This widget gets linked to an Input widget, and is automatically
     updated based on the state of that Input."""
 
@@ -83,7 +68,7 @@ Autocomplete {
     def __init__(
         self,
         linked_input: Input | str,
-        get_results: Callable[[str, int], list[AutocompleteOption]],
+        get_results: Callable[[str, int], Iterable[Candidate]],
         id: str | None = None,
         classes: str | None = None,
     ):
@@ -100,18 +85,27 @@ Autocomplete {
             classes: The classes of this widget, a space separated string.
         """
 
-        if isinstance(linked_input, str):
-            # If the user supplied a selector, find the Input to subscribe to
-            self._input_widget = self.app.query_one(linked_input)
-        else:
-            self._input_widget = linked_input
-
         super().__init__(
-            linked_input,
             id=id,
             classes=classes,
         )
         self._get_results = get_results
+        self._linked_input = linked_input
+        self._candidates = []
+
+    def on_mount(self, event: events.Mount) -> None:
+        # Ensure we have a reference to the Input widget we're subscribing to
+        if isinstance(self._linked_input, str):
+            self._input_widget: Input = self.app.query_one(self._linked_input, Input)
+        else:
+            self._input_widget: Input = self._linked_input
+
+        # A quick sanity check - make sure we have the appropriate layer available
+        # TODO - think about whether it makes sense to enforce this.
+        if "textual-autocomplete" not in self.screen.layers:
+            raise AutoCompleteError(
+                "Screen must have a layer called `textual-autocomplete`."
+            )
 
         # Configure the watch methods - we want to subscribe to a couple of the reactives inside the Input
         # so that we can react accordingly.
@@ -119,19 +113,19 @@ Autocomplete {
         watch(self._input_widget, attribute_name="cursor_position", callback=self._input_cursor_position_changed)
         watch(self._input_widget, attribute_name="value", callback=self._input_value_changed)
 
-    def on_mount(self, event: events.Mount) -> None:
-        # A quick sanity check - make sure we have the appropriate layer available
-        # TODO - think about whether it makes sense to enforce this.
-        if "textual-autocomplete" not in self.screen.layers:
-            raise AutocompleteError(
-                "Screen must have a layer called `textual-autocomplete`."
-            )
+    def render(self) -> RenderableType:
+        matches = [match for match in self._candidates]
+        return DropdownRender(
+            filter=self._input_widget.value,
+            matches=matches,
+            highlight_index=0,
+            component_styles={},
+        )
 
-    def _input_cursor_position_changed(self) -> None:
-        return
+    def _input_cursor_position_changed(self, cursor_position: int) -> None:
+        self._candidates = self._get_results(self._input_widget.value, cursor_position)
+        self.refresh()
 
-    def _input_value_changed(self) -> None:
-        return
-
-
-
+    def _input_value_changed(self, value: str) -> None:
+        self._candidates = self._get_results(value, self._input_widget.cursor_position)
+        self.refresh()
