@@ -48,11 +48,18 @@ class Candidate:
             In an IDE, the `main` (middle) column might contain the name of a function or method.
         right: The text appearing in the right column of the dropdown.
             The right column often contains some metadata relating to this option.
+        highlight_ranges: Custom ranges to highlight. By default, textual-autocomplete highlights
+            substrings: if the thing you've typed into the Input is a substring of the candidates
+            `main` attribute, then that substring will be highlighted. If you supply your own
+            implementation of get_results which uses a more complex process to decide what to
+            display in the dropdown, then you can customise the highlighting of the returned
+            candidates by supplying index ranges to highlight.
 
     """
     main: str = ""
     left_meta: str = ""
     right_meta: str = ""
+    highlight_ranges: Iterable[tuple[int, int]] = ()
 
 
 class AutoComplete(Widget):
@@ -68,7 +75,7 @@ Autocomplete {
     def __init__(
         self,
         linked_input: Input | str,
-        get_results: Callable[[str, int], Iterable[Candidate]],
+        get_results: Callable[[str, int], list[Candidate]],
         id: str | None = None,
         classes: str | None = None,
     ):
@@ -91,14 +98,15 @@ Autocomplete {
         )
         self._get_results = get_results
         self._linked_input = linked_input
-        self._candidates = []
+        self._candidates: list[Candidate] = []
+        self._input_widget: Input | None = None
 
     def on_mount(self, event: events.Mount) -> None:
         # Ensure we have a reference to the Input widget we're subscribing to
         if isinstance(self._linked_input, str):
-            self._input_widget: Input = self.app.query_one(self._linked_input, Input)
+            self._input_widget = self.app.query_one(self._linked_input, Input)
         else:
-            self._input_widget: Input = self._linked_input
+            self._input_widget = self._linked_input
 
         # A quick sanity check - make sure we have the appropriate layer available
         # TODO - think about whether it makes sense to enforce this.
@@ -114,6 +122,7 @@ Autocomplete {
         watch(self._input_widget, attribute_name="value", callback=self._input_value_changed)
 
     def render(self) -> RenderableType:
+        assert self._input_widget is not None
         matches = [match for match in self._candidates]
         return DropdownRender(
             filter=self._input_widget.value,
@@ -123,9 +132,11 @@ Autocomplete {
         )
 
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
+        assert self._input_widget is not None
         self._candidates = self._get_results(self._input_widget.value, cursor_position)
         self.refresh()
 
     def _input_value_changed(self, value: str) -> None:
+        assert self._input_widget is not None
         self._candidates = self._get_results(value, self._input_widget.cursor_position)
         self.refresh()

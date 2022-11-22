@@ -7,11 +7,12 @@ from textual_autocomplete._autocomplete import AutoComplete, Candidate
 
 
 def get_results(value: str, cursor_position: int) -> list[Candidate]:
-    return [
+    candidates = [
         Candidate("foo"),
         Candidate("bar"),
         Candidate("baz"),
     ]
+    return [c for c in candidates if value in c.main]
 
 
 class CompletionExample(App):
