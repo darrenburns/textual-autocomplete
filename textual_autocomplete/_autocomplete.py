@@ -4,8 +4,11 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Iterable, Callable
 
-from rich.console import Console, ConsoleOptions, RenderableType
+from rich.align import Align
+from rich.columns import Columns
+from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.measure import Measurement
+from rich.padding import Padding
 from rich.text import Text
 from textual import events
 from textual.css.styles import RenderStyles
@@ -16,6 +19,34 @@ from textual.widgets import Input
 
 class AutoCompleteError(Exception):
     pass
+
+
+class DropdownItem:
+    def __init__(
+        self,
+        left_meta: str,
+        main: str,
+        right_meta: str,
+        filter: str = "",
+    ):
+        self.left_meta = left_meta
+        self.main = main
+        self.right_meta = right_meta
+        self.filter = filter
+
+    @property
+    def renderable(self):
+        main_text = Text(self.main)
+        if self.filter != "":
+            main_text.highlight_words([self.filter], style="on red")
+        return Columns(
+            [self.left_meta, Padding(main_text, pad=(0, 4), style="on blue"), Text(self.right_meta, style="on green")])
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        yield self.renderable
+
+    def __rich_measure__(self, console: Console, options: ConsoleOptions) -> Measurement:
+        return Measurement.get(console, options, self.renderable)
 
 
 class DropdownRender:
@@ -30,20 +61,22 @@ class DropdownRender:
         self.matches = matches
         self.highlight_index = highlight_index
 
-    def __rich_console__(self, console: Console, options: ConsoleOptions):
-        matches = []
-        for match in self.matches:
-            candidate_text = Text(match.main)
-            candidate_text.highlight_words([self.filter], style="on yellow")
-            matches.append(candidate_text)
-        return Text("\n").join(matches).append("\n")
+    @property
+    def item_renderables(self) -> list[DropdownItem]:
+        return [
+            DropdownItem(match.left_meta, match.main, match.right_meta, filter=self.filter)
+            for match in self.matches
+        ]
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        yield from self.item_renderables
 
     def __rich_measure__(self, console: "Console", options: "ConsoleOptions") -> Measurement:
         get = partial(Measurement.get, console, options)
         maximum = 0
         for match in self.matches:
             maximum = max(get(match.left_meta)[1] + get(match.main)[1] + get(match.right_meta)[1], maximum)
-        return Measurement(10, maximum)
+        return Measurement(10, maximum + 20)
 
 
 @dataclass
@@ -52,10 +85,10 @@ class Candidate:
     Note that this is not a widget, it's simply a data structure for describing dropdown items.
 
     Args:
-        main: The main text representing this option - this will be highlighted by default.
-            In an IDE, the `main` (middle) column might contain the name of a function or method.
         left: The left column will often contain an icon/symbol, the main (middle)
             column contains the text that represents this option.
+        main: The main text representing this option - this will be highlighted by default.
+            In an IDE, the `main` (middle) column might contain the name of a function or method.
         right: The text appearing in the right column of the dropdown.
             The right column often contains some metadata relating to this option.
         highlight_ranges: Custom ranges to highlight. By default, textual-autocomplete highlights
@@ -66,8 +99,8 @@ class Candidate:
             candidates by supplying index ranges to highlight.
 
     """
-    main: str = ""
     left_meta: str = ""
+    main: str = ""
     right_meta: str = ""
     highlight_ranges: Iterable[tuple[int, int]] = ()
 

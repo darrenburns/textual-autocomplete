@@ -8,9 +8,9 @@ from textual_autocomplete._autocomplete import AutoComplete, Candidate
 
 def get_results(value: str, cursor_position: int) -> list[Candidate]:
     candidates = [
-        Candidate("foo"),
-        Candidate("bar"),
-        Candidate("baz"),
+        Candidate("f", "foo", "abc"),
+        Candidate("p", "bar", "def"),
+        Candidate("f", "baz", "ghi"),
     ]
     return [c for c in candidates if value in c.main]
 
