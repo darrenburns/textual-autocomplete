@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 from typing import Iterable, Callable
 
 from rich.console import Console, ConsoleOptions, RenderableType
+from rich.measure import Measurement
 from rich.text import Text
 from textual import events
 from textual.css.styles import RenderStyles
@@ -34,12 +36,20 @@ class DropdownRender:
             candidate_text = Text(match.main)
             candidate_text.highlight_words([self.filter], style="on yellow")
             matches.append(candidate_text)
-        return Text("\n").join(matches)
+        return Text("\n").join(matches).append("\n")
+
+    def __rich_measure__(self, console: "Console", options: "ConsoleOptions") -> Measurement:
+        get = partial(Measurement.get, console, options)
+        maximum = 0
+        for match in self.matches:
+            maximum = max(get(match.left_meta)[1] + get(match.main)[1] + get(match.right_meta)[1], maximum)
+        return Measurement(10, maximum)
 
 
 @dataclass
 class Candidate:
     """A single option appearing in the autocompletion dropdown. Each option has up to 3 columns.
+    Note that this is not a widget, it's simply a data structure for describing dropdown items.
 
     Args:
         left: The left column will often contain an icon/symbol, the main (middle)
@@ -67,8 +77,13 @@ class AutoComplete(Widget):
     updated based on the state of that Input."""
 
     DEFAULT_CSS = """\
-Autocomplete {
-    layer: textual-autocomplete; 
+AutoComplete {
+    layer: textual-autocomplete;
+    display: none;
+    margin-top: 3;
+    background: $panel;
+    width: auto;
+    height: auto;
 }
     """
 
@@ -98,7 +113,7 @@ Autocomplete {
         )
         self._get_results = get_results
         self._linked_input = linked_input
-        self._candidates: list[Candidate] = []
+        self._matches: list[Candidate] = []
         self._input_widget: Input | None = None
 
     def on_mount(self, event: events.Mount) -> None:
@@ -121,12 +136,13 @@ Autocomplete {
         watch(self._input_widget, attribute_name="cursor_position", callback=self._input_cursor_position_changed)
         watch(self._input_widget, attribute_name="value", callback=self._input_value_changed)
 
+        self._sync_state(self._input_widget.value, self._input_widget.cursor_position)
+
     def render(self) -> RenderableType:
         assert self._input_widget is not None, "input_widget set in on_mount"
-        matches = [match for match in self._candidates]
         return DropdownRender(
             filter=self._input_widget.value,
-            matches=matches,
+            matches=self._matches,
             highlight_index=0,
             component_styles={},
         )
@@ -140,5 +156,6 @@ Autocomplete {
         self._sync_state(value, self._input_widget.cursor_position)
 
     def _sync_state(self, value: str, cursor_position: int) -> None:
-        self._candidates = self._get_results(value, cursor_position)
+        self._matches = self._get_results(value, cursor_position)
+        self.display = len(self._matches) > 0 and value != ""
         self.refresh()
