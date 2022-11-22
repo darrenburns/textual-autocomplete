@@ -52,10 +52,10 @@ class Candidate:
     Note that this is not a widget, it's simply a data structure for describing dropdown items.
 
     Args:
-        left: The left column will often contain an icon/symbol, the main (middle)
-            column contains the text that represents this option.
         main: The main text representing this option - this will be highlighted by default.
             In an IDE, the `main` (middle) column might contain the name of a function or method.
+        left: The left column will often contain an icon/symbol, the main (middle)
+            column contains the text that represents this option.
         right: The text appearing in the right column of the dropdown.
             The right column often contains some metadata relating to this option.
         highlight_ranges: Custom ranges to highlight. By default, textual-autocomplete highlights
