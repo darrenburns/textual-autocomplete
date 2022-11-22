@@ -120,6 +120,8 @@ Autocomplete {
         watch(self._input_widget, attribute_name="value", callback=self._input_value_changed)
 
     def on_mount(self, event: events.Mount) -> None:
+        # A quick sanity check - make sure we have the appropriate layer available
+        # TODO - think about whether it makes sense to enforce this.
         if "textual-autocomplete" not in self.screen.layers:
             raise AutocompleteError(
                 "Screen must have a layer called `textual-autocomplete`."
@@ -130,3 +132,6 @@ Autocomplete {
 
     def _input_value_changed(self) -> None:
         return
+
+
+
