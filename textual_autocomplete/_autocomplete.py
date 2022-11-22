@@ -122,7 +122,7 @@ Autocomplete {
         watch(self._input_widget, attribute_name="value", callback=self._input_value_changed)
 
     def render(self) -> RenderableType:
-        assert self._input_widget is not None
+        assert self._input_widget is not None, "input_widget set in on_mount"
         matches = [match for match in self._candidates]
         return DropdownRender(
             filter=self._input_widget.value,
@@ -132,11 +132,13 @@ Autocomplete {
         )
 
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
-        assert self._input_widget is not None
-        self._candidates = self._get_results(self._input_widget.value, cursor_position)
-        self.refresh()
+        assert self._input_widget is not None, "input_widget set in on_mount"
+        self._sync_state(self._input_widget.value, cursor_position)
 
     def _input_value_changed(self, value: str) -> None:
-        assert self._input_widget is not None
-        self._candidates = self._get_results(value, self._input_widget.cursor_position)
+        assert self._input_widget is not None, "input_widget set in on_mount"
+        self._sync_state(value, self._input_widget.cursor_position)
+
+    def _sync_state(self, value: str, cursor_position: int) -> None:
+        self._candidates = self._get_results(value, cursor_position)
         self.refresh()
