@@ -8,6 +8,7 @@ from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.measure import Measurement
 from rich.text import Text
 from textual import events
+from textual.app import ComposeResult
 from textual.css.styles import RenderStyles
 from textual.reactive import watch
 from textual.widget import Widget
@@ -128,17 +129,12 @@ class Candidate:
 
 
 class AutoComplete(Widget):
-    """An autocompletion dropdown widget. This widget gets linked to an Input widget, and is automatically
-    updated based on the state of that Input."""
 
     DEFAULT_CSS = """\
 AutoComplete {
-    layer: textual-autocomplete;
-    display: none;
-    margin-top: 3;
-    background: $panel;
+    overflow: hidden auto;
+    height: 1;
     width: auto;
-    height: auto;
 }
     """
 
@@ -163,11 +159,57 @@ AutoComplete {
             id: The ID of the widget, allowing you to directly refer to it using CSS and queries.
             classes: The classes of this widget, a space separated string.
         """
-
         super().__init__(
             id=id,
             classes=classes,
         )
+        self._get_results = get_results
+        self._matches: list[Candidate] = []
+        self._input_widget: Input | None = None
+        self.linked_input = linked_input
+        self.track_cursor = track_cursor
+
+    def compose(self) -> ComposeResult:
+        yield AutoCompleteChild(
+            self.linked_input,
+            self._get_results,
+            self.track_cursor,
+        )
+
+
+class AutoCompleteChild(Widget):
+    """An autocompletion dropdown widget. This widget gets linked to an Input widget, and is automatically
+    updated based on the state of that Input."""
+
+    DEFAULT_CSS = """\
+AutoCompleteChild {
+    layer: textual-autocomplete;
+    display: none;
+    margin-top: 3;
+    background: $panel;
+    width: auto;
+    height: auto;
+}
+    """
+
+    def __init__(
+        self,
+        linked_input: Input | str,
+        get_results: Callable[[str, int], list[Candidate]],
+        track_cursor: bool = True,
+    ):
+        """Construct an Autocomplete. Autocomplete only works if your Screen has a dedicated layer
+        called `textual-autocomplete`.
+
+        Args:
+            linked_input: A reference to the Input Widget to add autocomplete to, or a selector/query string
+                identifying the Input Widget that should power this autocomplete.
+            get_results: Function to call to retrieve the list of completion results for the current input value.
+                Function takes the current input value and cursor position as arguments, and returns a list of
+                `AutoCompleteOption` which will be displayed as a dropdown list.
+            track_cursor: If True, the autocomplete dropdown will follow the cursor position.
+        """
+        super().__init__()
         self._get_results = get_results
         self._matches: list[Candidate] = []
         self._input_widget: Input | None = None
