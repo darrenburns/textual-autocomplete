@@ -33,8 +33,8 @@ class DropdownRender:
 
     @property
     def _table(self) -> Table:
-        table = Table.grid(expand=True, padding=(0, 1))
-        table.add_column("left_meta", justify="right")
+        table = Table.grid(expand=True)
+        table.add_column("left_meta", justify="left")
         table.add_column("main")
         table.add_column("right_meta", justify="right")
 
@@ -92,15 +92,15 @@ AutoComplete {
     dock: top;
     display: none;
     overflow: hidden auto;
-    background: $panel;
+    background: $panel-lighten-1;
     height: auto;
     max-height: 12;
     width: auto;
-    max-width: 36;
     scrollbar-size-vertical: 1;
 }
     """
 
+    # TODO: Add component classes for each column.
     COMPONENT_CLASSES: ClassVar[set[str]] = {
         "autocomplete--highlight",
         "autocomplete--substring-match",

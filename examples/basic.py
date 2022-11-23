@@ -1,15 +1,23 @@
 from __future__ import annotations
 
-import rich
+from rich.color import Color
+from rich.style import Style
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.widgets import Input, Footer
+from textual.containers import Container
+from textual.renderables._blend_colors import blend_colors
+from textual.widgets import Input, Footer, Label
 
 from textual_autocomplete._autocomplete import AutoComplete, Candidate
 
+INFO_TEXT = """\
+Cities are ranked by population.
+The left column shows the rank of the city.
+The right column of the dropdown is coloured based on that population."""
+
 DATA = [
-    ("London", "8,907,918"),
+    # ("London", "8,907,918"),
     ("Birmingham", "1,153,717"),
     ("Glasgow", "612,040"),
     ("Liverpool", "579,256"),
@@ -43,12 +51,18 @@ DATA = [
 
 
 def get_results(value: str, cursor_position: int) -> list[Candidate]:
-    candidates = [
-        Candidate(
-            Text(str(rank)), Text(city), Text(population)
+    maximum_population = int(DATA[0][1].replace(",", ""))
+
+    candidates = []
+    for rank, (city, population) in enumerate(DATA, start=2):
+        ratio = float(population.replace(",", "")) / maximum_population
+        color = blend_colors(Color.parse("#e86c4a"), Color.parse("#4ed43f"), ratio)
+        candidates.append(
+            Candidate(
+                Text(str(rank)), Text(city),
+                Text(population, style=Style.from_color(color))
+            )
         )
-        for rank, (city, population) in enumerate(DATA, start=1)
-    ]
     return [c for c in candidates if value.lower() in c.main.plain.lower()]
 
 
@@ -60,15 +74,19 @@ class CompletionExample(App):
     ]
 
     def compose(self) -> ComposeResult:
-        yield Input(id="search-box")
+        yield Container(
+            Label("Search for a city", id="lead-text"),
+            Input(id="search-box"),
+            Label(INFO_TEXT, id="info-text"),
+            id="search-container",
+        )
         yield AutoComplete(
             linked_input="#search-box",
             get_results=get_results,
             id="my-autocomplete",
         )
+
         yield Footer()
-
-
 
 
 app = CompletionExample()

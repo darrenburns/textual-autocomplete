@@ -3,8 +3,18 @@ Screen {
     align: center middle;
 }
 
-#search-box {
-    width: 60%;
+#lead-text {
+    width: 100%;
+    content-align: center middle;
+    padding: 1 1 1 0;
+}
+
+#my-autocomplete {
+    width: 32;
+    max-height: 6;
+    /*border-left: wide magenta;*/
+    /*scrollbar-color: red;*/
+    /*background: darkgreen;*/
 }
 
 #my-autocomplete .autocomplete--substring-match {
