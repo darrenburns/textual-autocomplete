@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import rich
 from rich.text import Text
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.widgets import Input
 
 from textual_autocomplete._autocomplete import AutoComplete, Candidate
@@ -42,7 +44,9 @@ DATA = [
 
 def get_results(value: str, cursor_position: int) -> list[Candidate]:
     candidates = [
-        Candidate(Text(str(rank)), Text(city), Text(population))
+        Candidate(
+            Text(str(rank)), Text(city), Text(population)
+        )
         for rank, (city, population) in enumerate(DATA, start=1)
     ]
     return [c for c in candidates if value.lower() in c.main.plain.lower()]
@@ -51,9 +55,18 @@ def get_results(value: str, cursor_position: int) -> list[Candidate]:
 class CompletionExample(App):
     CSS_PATH = "basic.css"
 
+    BINDINGS = [
+        Binding("d", "toggle_dark", "Day/Night")
+    ]
+
     def compose(self) -> ComposeResult:
         yield Input(id="search-box")
-        yield AutoComplete(linked_input="#search-box", get_results=get_results)
+        yield AutoComplete(
+            linked_input="#search-box",
+            get_results=get_results,
+            id="my-autocomplete",
+        )
+
 
 
 

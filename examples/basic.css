@@ -1,3 +1,18 @@
 Screen {
     layers: textual-autocomplete;
+    align: center middle;
 }
+
+#search-box {
+    width: 60%;
+}
+
+#my-autocomplete .autocomplete--substring-match {
+    color: $accent-lighten-2;
+    background: $panel;
+    text-style: bold;
+}
+#my-autocomplete .autocomplete--highlight {
+    background: $boost;
+}
+

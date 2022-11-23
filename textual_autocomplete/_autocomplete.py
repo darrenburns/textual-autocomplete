@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
-from typing import Iterable, Callable
+from typing import Iterable, Callable, ClassVar, Mapping
 
-from rich.columns import Columns
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
-from rich.measure import Measurement
+from rich.style import Style
+from rich.table import Table
 from rich.text import Text
 from textual import events
 from textual.app import ComposeResult
-from textual.css.styles import RenderStyles
 from textual.reactive import watch
 from textual.widget import Widget
 from textual.widgets import Input
@@ -20,84 +18,40 @@ class AutoCompleteError(Exception):
     pass
 
 
-class DropdownItem:
-    def __init__(
-        self,
-        left_meta: Text,
-        main: Text,
-        right_meta: Text,
-        filter: str = "",
-    ):
-        self.left_meta = left_meta
-        self.main = main
-        self.right_meta = right_meta
-        self.filter = filter
-
-    @property
-    def renderable(self):
-        if self.filter != "":
-            self.main.highlight_words([self.filter], style="on magenta", case_sensitive=False)
-
-        columns = []
-        if self.left_meta:
-            columns.append(self.left_meta)
-        if self.main:
-            columns.append(self.main)
-        if self.right_meta:
-            columns.append(self.right_meta)
-
-        return Columns(columns)
-
-    def __rich_console__(
-        self, console: Console, options: ConsoleOptions
-    ) -> RenderResult:
-        yield self.renderable
-
-    def __rich_measure__(
-        self, console: Console, options: ConsoleOptions
-    ) -> Measurement:
-        measurement = Measurement.get(console, options, self.renderable)
-        return measurement
-
-
 class DropdownRender:
     def __init__(
         self,
         filter: str,
         matches: Iterable[Candidate],
         highlight_index: int,
-        component_styles: dict[str, RenderStyles],
+        component_styles: Mapping[str, Style],
     ) -> None:
         self.filter = filter
         self.matches = matches
         self.highlight_index = highlight_index
+        self.component_styles = component_styles
 
     @property
-    def item_renderables(self) -> list[DropdownItem]:
-        return [
-            DropdownItem(
-                match.left_meta, match.main, match.right_meta, filter=self.filter
-            )
-            for match in self.matches
-        ]
+    def _table(self) -> Table:
+        table = Table.grid(expand=True, padding=(0, 1))
+        table.add_column("left_meta", justify="right")
+        table.add_column("main")
+        table.add_column("right_meta", justify="right")
+
+        for match in self.matches:
+            if self.filter != "":
+                match.main.highlight_words(
+                    [self.filter], style=self.component_styles["substring-match"], case_sensitive=False
+                )
+
+            table.add_row(match.left_meta, match.main, match.right_meta)
+
+        return table
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        yield from self.item_renderables
-
-    def __rich_measure__(
-        self, console: "Console", options: "ConsoleOptions"
-    ) -> Measurement:
-        get = partial(Measurement.get, console, options)
-        minimum = 0
-        maximum = 0
-        for item in self.item_renderables:
-            item_min, item_max = get(item)
-            minimum = max(item_min, minimum)
-            maximum = max(item_max, maximum)
-
-        return Measurement(minimum, maximum)
+        yield self._table
 
 
 @dataclass
@@ -132,14 +86,23 @@ class AutoComplete(Widget):
     DEFAULT_CSS = """\
 AutoComplete {
     layer: textual-autocomplete;
+    /* to prevent parent `align` confusing things, we dock to remove from flow */
+    dock: top;
     display: none;
     overflow: hidden auto;
     background: $panel;
     height: auto;
     max-height: 12;
     width: auto;
+    max-width: 36;
+    scrollbar-size-vertical: 1;
 }
     """
+
+    COMPONENT_CLASSES: ClassVar[set[str]] = {
+        "autocomplete--highlight",
+        "autocomplete--substring-match",
+    }
 
     def __init__(
         self,
@@ -186,15 +149,13 @@ class AutoCompleteChild(Widget):
 
     DEFAULT_CSS = """\
 AutoCompleteChild {
-    width: auto;
     height: auto;
 }
     """
-
     def __init__(
         self,
         linked_input: Input | str,
-        get_results: Callable[[str, int], list[Candidate]],
+        get_results: Callable[[str, int], list[Candidate]],  # TODO: Support awaitable and add debounce.
         track_cursor: bool = True,
     ):
         """Construct an Autocomplete. Autocomplete only works if your Screen has a dedicated layer
@@ -215,12 +176,24 @@ AutoCompleteChild {
         self.linked_input = linked_input
         self.track_cursor = track_cursor
 
+        # Rich style information - these are actually component classes
+        # on the parent wrapper container to make things more convenient.
+        self._substring_match_style: Style | None = None
+        self._highlight_style: Style | None = None
+
     def on_mount(self, event: events.Mount) -> None:
         # Ensure we have a reference to the Input widget we're subscribing to
         if isinstance(self.linked_input, str):
             self._input_widget = self.app.query_one(self.linked_input, Input)
         else:
             self._input_widget = self.linked_input
+
+        self._substring_match_style = self.parent.get_component_rich_style(
+            "autocomplete--substring-match"
+        )
+        self._highlight_style = self.parent.get_component_rich_style(
+            "autocomplete--highlight"
+        )
 
         # A quick sanity check - make sure we have the appropriate layer available
         # TODO - think about whether it makes sense to enforce this.
@@ -252,7 +225,10 @@ AutoCompleteChild {
             filter=self._input_widget.value,
             matches=self._matches,
             highlight_index=0,
-            component_styles={},
+            component_styles={
+                "highlight": self._highlight_style,
+                "substring-match": self._substring_match_style,
+            },
         )
 
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
@@ -276,7 +252,14 @@ AutoCompleteChild {
 
         # TODO: Will need to subtract view_position from cursor_position
 
-        cursor_screen_position = x + (cursor_position - self._input_widget.view_position + 1)
-        self.parent.styles.margin = (line_below_cursor, right, bottom, cursor_screen_position)
+        cursor_screen_position = x + (
+            cursor_position - self._input_widget.view_position
+        )
+        self.parent.styles.margin = (
+            line_below_cursor,
+            right,
+            bottom,
+            cursor_screen_position,
+        )
 
         self.refresh()
