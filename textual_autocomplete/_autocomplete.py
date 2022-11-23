@@ -4,11 +4,8 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Iterable, Callable
 
-from rich.align import Align
-from rich.columns import Columns
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.measure import Measurement
-from rich.padding import Padding
 from rich.text import Text
 from textual import events
 from textual.css.styles import RenderStyles
@@ -24,9 +21,9 @@ class AutoCompleteError(Exception):
 class DropdownItem:
     def __init__(
         self,
-        left_meta: str,
-        main: str,
-        right_meta: str,
+        left_meta: Text,
+        main: Text,
+        right_meta: Text,
         filter: str = "",
     ):
         self.left_meta = left_meta
@@ -36,17 +33,28 @@ class DropdownItem:
 
     @property
     def renderable(self):
-        main_text = Text(self.main)
         if self.filter != "":
-            main_text.highlight_words([self.filter], style="on red")
-        return Columns(
-            [self.left_meta, Padding(main_text, pad=(0, 4), style="on blue"), Text(self.right_meta, style="on green")])
+            self.main.highlight_words([self.filter], style="on red")
 
-    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        columns = []
+        if self.left_meta:
+            columns.append(self.left_meta)
+        if self.main:
+            columns.append(self.main)
+        if self.right_meta:
+            columns.append(self.right_meta)
+
+        return Text(" ").join(columns)
+
+    def __rich_console__(self, console: Console,
+                         options: ConsoleOptions) -> RenderResult:
         yield self.renderable
 
-    def __rich_measure__(self, console: Console, options: ConsoleOptions) -> Measurement:
-        return Measurement.get(console, options, self.renderable)
+    def __rich_measure__(self, console: Console,
+                         options: ConsoleOptions) -> Measurement:
+        measurement = Measurement.get(console, options, self.renderable)
+        print(measurement)
+        return measurement
 
 
 class DropdownRender:
@@ -64,19 +72,26 @@ class DropdownRender:
     @property
     def item_renderables(self) -> list[DropdownItem]:
         return [
-            DropdownItem(match.left_meta, match.main, match.right_meta, filter=self.filter)
+            DropdownItem(match.left_meta, match.main, match.right_meta,
+                         filter=self.filter)
             for match in self.matches
         ]
 
-    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+    def __rich_console__(self, console: Console,
+                         options: ConsoleOptions) -> RenderResult:
         yield from self.item_renderables
 
-    def __rich_measure__(self, console: "Console", options: "ConsoleOptions") -> Measurement:
+    def __rich_measure__(self, console: "Console",
+                         options: "ConsoleOptions") -> Measurement:
         get = partial(Measurement.get, console, options)
+        minimum = 0
         maximum = 0
-        for match in self.matches:
-            maximum = max(get(match.left_meta)[1] + get(match.main)[1] + get(match.right_meta)[1], maximum)
-        return Measurement(10, maximum + 20)
+        for item in self.item_renderables:
+            item_min, item_max = get(item)
+            minimum = max(item_min, minimum)
+            maximum = max(item_max, maximum)
+
+        return Measurement(minimum, maximum)
 
 
 @dataclass
@@ -91,18 +106,19 @@ class Candidate:
             In an IDE, the `main` (middle) column might contain the name of a function or method.
         right: The text appearing in the right column of the dropdown.
             The right column often contains some metadata relating to this option.
-        highlight_ranges: Custom ranges to highlight. By default, textual-autocomplete highlights
-            substrings: if the thing you've typed into the Input is a substring of the candidates
+        highlight_ranges: Custom ranges to highlight. By default the value is None,
+            meaning textual-autocomplete will highlight substrings in the dropdown.
+            That is, if the value you've typed into the Input is a substring of the candidates
             `main` attribute, then that substring will be highlighted. If you supply your own
             implementation of get_results which uses a more complex process to decide what to
             display in the dropdown, then you can customise the highlighting of the returned
             candidates by supplying index ranges to highlight.
 
     """
-    left_meta: str = ""
-    main: str = ""
-    right_meta: str = ""
-    highlight_ranges: Iterable[tuple[int, int]] = ()
+    left_meta: Text = ""
+    main: Text = ""
+    right_meta: Text = ""
+    highlight_ranges: Iterable[tuple[int, int]] | None = None
 
 
 class AutoComplete(Widget):
@@ -124,6 +140,7 @@ AutoComplete {
         self,
         linked_input: Input | str,
         get_results: Callable[[str, int], list[Candidate]],
+        track_cursor: bool = True,
         id: str | None = None,
         classes: str | None = None,
     ):
@@ -136,6 +153,7 @@ AutoComplete {
             get_results: Function to call to retrieve the list of completion results for the current input value.
                 Function takes the current input value and cursor position as arguments, and returns a list of
                 `AutoCompleteOption` which will be displayed as a dropdown list.
+            track_cursor: If True, the autocomplete dropdown will follow the cursor position.
             id: The ID of the widget, allowing you to directly refer to it using CSS and queries.
             classes: The classes of this widget, a space separated string.
         """
@@ -145,16 +163,17 @@ AutoComplete {
             classes=classes,
         )
         self._get_results = get_results
-        self._linked_input = linked_input
         self._matches: list[Candidate] = []
         self._input_widget: Input | None = None
+        self.linked_input = linked_input
+        self.track_cursor = track_cursor
 
     def on_mount(self, event: events.Mount) -> None:
         # Ensure we have a reference to the Input widget we're subscribing to
-        if isinstance(self._linked_input, str):
-            self._input_widget = self.app.query_one(self._linked_input, Input)
+        if isinstance(self.linked_input, str):
+            self._input_widget = self.app.query_one(self.linked_input, Input)
         else:
-            self._input_widget = self._linked_input
+            self._input_widget = self.linked_input
 
         # A quick sanity check - make sure we have the appropriate layer available
         # TODO - think about whether it makes sense to enforce this.
@@ -163,11 +182,14 @@ AutoComplete {
                 "Screen must have a layer called `textual-autocomplete`."
             )
 
-        # Configure the watch methods - we want to subscribe to a couple of the reactives inside the Input
-        # so that we can react accordingly.
-        # TODO: Error cases - Handle case where reference to input widget no longer exists for example
-        watch(self._input_widget, attribute_name="cursor_position", callback=self._input_cursor_position_changed)
-        watch(self._input_widget, attribute_name="value", callback=self._input_value_changed)
+        # Configure the watch methods - we want to subscribe to a couple of the
+        # reactives inside the Input so that we can react accordingly.
+        # TODO: Error cases - Handle case where reference to input widget no
+        #  longer exists, for example
+        watch(self._input_widget, attribute_name="cursor_position",
+              callback=self._input_cursor_position_changed)
+        watch(self._input_widget, attribute_name="value",
+              callback=self._input_value_changed)
 
         self._sync_state(self._input_widget.value, self._input_widget.cursor_position)
 

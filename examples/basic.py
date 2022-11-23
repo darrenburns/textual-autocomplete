@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.widgets import Input
 
@@ -8,10 +9,12 @@ from textual_autocomplete._autocomplete import AutoComplete, Candidate
 
 def get_results(value: str, cursor_position: int) -> list[Candidate]:
     candidates = [
-        Candidate("f", "foo", "abc"),
-        Candidate("p", "bar", "def"),
-        Candidate("f", "baz", "ghi"),
+        Candidate(Text("f"), Text("foo"), Text("abc")),
+        Candidate(Text("p"), Text("bar"), Text("def")),
+        Candidate(Text("f"), Text("baz"), Text("ghi")),
     ]
+    for candidate in candidates:
+        candidate.main.set_length(20)
     return [c for c in candidates if value in c.main]
 
 
