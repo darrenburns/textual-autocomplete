@@ -46,12 +46,14 @@ class DropdownItem:
 
         return Text(" ").join(columns)
 
-    def __rich_console__(self, console: Console,
-                         options: ConsoleOptions) -> RenderResult:
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
         yield self.renderable
 
-    def __rich_measure__(self, console: Console,
-                         options: ConsoleOptions) -> Measurement:
+    def __rich_measure__(
+        self, console: Console, options: ConsoleOptions
+    ) -> Measurement:
         measurement = Measurement.get(console, options, self.renderable)
         print(measurement)
         return measurement
@@ -72,17 +74,20 @@ class DropdownRender:
     @property
     def item_renderables(self) -> list[DropdownItem]:
         return [
-            DropdownItem(match.left_meta, match.main, match.right_meta,
-                         filter=self.filter)
+            DropdownItem(
+                match.left_meta, match.main, match.right_meta, filter=self.filter
+            )
             for match in self.matches
         ]
 
-    def __rich_console__(self, console: Console,
-                         options: ConsoleOptions) -> RenderResult:
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
         yield from self.item_renderables
 
-    def __rich_measure__(self, console: "Console",
-                         options: "ConsoleOptions") -> Measurement:
+    def __rich_measure__(
+        self, console: "Console", options: "ConsoleOptions"
+    ) -> Measurement:
         get = partial(Measurement.get, console, options)
         minimum = 0
         maximum = 0
@@ -115,6 +120,7 @@ class Candidate:
             candidates by supplying index ranges to highlight.
 
     """
+
     left_meta: Text = ""
     main: Text = ""
     right_meta: Text = ""
@@ -186,10 +192,16 @@ AutoComplete {
         # reactives inside the Input so that we can react accordingly.
         # TODO: Error cases - Handle case where reference to input widget no
         #  longer exists, for example
-        watch(self._input_widget, attribute_name="cursor_position",
-              callback=self._input_cursor_position_changed)
-        watch(self._input_widget, attribute_name="value",
-              callback=self._input_value_changed)
+        watch(
+            self._input_widget,
+            attribute_name="cursor_position",
+            callback=self._input_cursor_position_changed,
+        )
+        watch(
+            self._input_widget,
+            attribute_name="value",
+            callback=self._input_value_changed,
+        )
 
         self._sync_state(self._input_widget.value, self._input_widget.cursor_position)
 
