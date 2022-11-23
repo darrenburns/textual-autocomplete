@@ -4,7 +4,7 @@ import rich
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.widgets import Input
+from textual.widgets import Input, Footer
 
 from textual_autocomplete._autocomplete import AutoComplete, Candidate
 
@@ -56,7 +56,7 @@ class CompletionExample(App):
     CSS_PATH = "basic.css"
 
     BINDINGS = [
-        Binding("d", "toggle_dark", "Day/Night")
+        Binding("ctrl+d", "toggle_dark", "Day/Night")
     ]
 
     def compose(self) -> ComposeResult:
@@ -66,6 +66,7 @@ class CompletionExample(App):
             get_results=get_results,
             id="my-autocomplete",
         )
+        yield Footer()
 
 
 

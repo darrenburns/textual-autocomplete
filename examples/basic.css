@@ -9,10 +9,9 @@ Screen {
 
 #my-autocomplete .autocomplete--substring-match {
     color: $accent-lighten-2;
-    background: $panel;
     text-style: bold;
 }
-#my-autocomplete .autocomplete--highlight {
-    background: $boost;
-}
+/*#my-autocomplete .autocomplete--highlight {*/
+/*    background: $boost;*/
+/*}*/
 

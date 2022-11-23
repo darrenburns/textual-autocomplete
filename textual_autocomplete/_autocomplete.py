@@ -41,7 +41,9 @@ class DropdownRender:
         for match in self.matches:
             if self.filter != "":
                 match.main.highlight_words(
-                    [self.filter], style=self.component_styles["substring-match"], case_sensitive=False
+                    [self.filter],
+                    style=self.component_styles["substring-match"],
+                    case_sensitive=False,
                 )
 
             table.add_row(match.left_meta, match.main, match.right_meta)
@@ -152,10 +154,12 @@ AutoCompleteChild {
     height: auto;
 }
     """
+
     def __init__(
         self,
         linked_input: Input | str,
-        get_results: Callable[[str, int], list[Candidate]],  # TODO: Support awaitable and add debounce.
+        get_results: Callable[[str, int], list[Candidate]],
+        # TODO: Support awaitable and add debounce.
         track_cursor: bool = True,
     ):
         """Construct an Autocomplete. Autocomplete only works if your Screen has a dedicated layer
@@ -188,13 +192,6 @@ AutoCompleteChild {
         else:
             self._input_widget = self.linked_input
 
-        self._substring_match_style = self.parent.get_component_rich_style(
-            "autocomplete--substring-match"
-        )
-        self._highlight_style = self.parent.get_component_rich_style(
-            "autocomplete--highlight"
-        )
-
         # A quick sanity check - make sure we have the appropriate layer available
         # TODO - think about whether it makes sense to enforce this.
         if "textual-autocomplete" not in self.screen.layers:
@@ -221,13 +218,14 @@ AutoCompleteChild {
 
     def render(self) -> RenderableType:
         assert self._input_widget is not None, "input_widget set in on_mount"
+        parent_component = self.parent.get_component_rich_style
         return DropdownRender(
             filter=self._input_widget.value,
             matches=self._matches,
             highlight_index=0,
             component_styles={
-                "highlight": self._highlight_style,
-                "substring-match": self._substring_match_style,
+                "highlight": parent_component("autocomplete--highlight"),
+                "substring-match": parent_component("autocomplete--substring-match"),
             },
         )
 
