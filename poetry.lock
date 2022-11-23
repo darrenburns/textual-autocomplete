@@ -364,19 +364,24 @@ version = "0.5.0"
 description = "Modern Text User Interface framework"
 category = "main"
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = "^3.7"
+develop = true
 
 [package.dependencies]
 aiohttp = {version = ">=3.8.1", optional = true, markers = "extra == \"dev\""}
 click = {version = ">=8.1.2", optional = true, markers = "extra == \"dev\""}
-importlib-metadata = ">=4.11.3,<5.0.0"
+importlib-metadata = "^4.11.3"
 msgpack = {version = ">=1.0.3", optional = true, markers = "extra == \"dev\""}
 nanoid = ">=2.0.0"
-rich = ">=12.6.0,<13.0.0"
-typing-extensions = {version = ">=4.0.0,<5.0.0", markers = "python_version < \"3.10\""}
+rich = "^12.6.0"
+typing-extensions = {version = "^4.0.0", markers = "python_version < \"3.10\""}
 
 [package.extras]
 dev = ["aiohttp (>=3.8.1)", "click (>=8.1.2)", "msgpack (>=1.0.3)"]
+
+[package.source]
+type = "directory"
+url = "../textual"
 
 [[package]]
 name = "tomli"
@@ -448,7 +453,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.8"
-content-hash = "51b8148d1680f5ce56fbff9e4b20cfa12a0adc4d222931e0a3c75c8f02a8017a"
+content-hash = "89a501091a0137ac772fc38a3fa457540f92f23cd06e8c57c413b47408254159"
 
 [metadata.files]
 aiohttp = [
@@ -921,10 +926,7 @@ six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
 ]
-textual = [
-    {file = "textual-0.5.0-py3-none-any.whl", hash = "sha256:d1925f9f019858beaabda8a87cb87fb57cbbf321e948fc3b28d7085e83c8f5ab"},
-    {file = "textual-0.5.0.tar.gz", hash = "sha256:516bf4db05830e70f9806828610a1a00de08068d984d329dbecc8dbef5d71ab7"},
-]
+textual = []
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
     {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},

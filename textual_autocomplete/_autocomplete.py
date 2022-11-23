@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Iterable, Callable
 
+from rich.columns import Columns
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.measure import Measurement
 from rich.text import Text
@@ -35,7 +36,7 @@ class DropdownItem:
     @property
     def renderable(self):
         if self.filter != "":
-            self.main.highlight_words([self.filter], style="on red")
+            self.main.highlight_words([self.filter], style="on magenta", case_sensitive=False)
 
         columns = []
         if self.left_meta:
@@ -45,7 +46,7 @@ class DropdownItem:
         if self.right_meta:
             columns.append(self.right_meta)
 
-        return Text(" ").join(columns)
+        return Columns(columns)
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
@@ -135,9 +136,8 @@ AutoComplete {
     overflow: hidden auto;
     background: $panel;
     height: auto;
-    max-height: 1;
+    max-height: 12;
     width: auto;
-    margin-top: 5;
 }
     """
 
@@ -235,13 +235,13 @@ AutoCompleteChild {
         #  longer exists, for example
         watch(
             self._input_widget,
-            attribute_name="cursor_position",
-            callback=self._input_cursor_position_changed,
+            attribute_name="value",
+            callback=self._input_value_changed,
         )
         watch(
             self._input_widget,
-            attribute_name="value",
-            callback=self._input_value_changed,
+            attribute_name="cursor_position",
+            callback=self._input_cursor_position_changed,
         )
 
         self._sync_state(self._input_widget.value, self._input_widget.cursor_position)
@@ -257,13 +257,26 @@ AutoCompleteChild {
 
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
         assert self._input_widget is not None, "input_widget set in on_mount"
+        print("cursor changed")
         self._sync_state(self._input_widget.value, cursor_position)
 
     def _input_value_changed(self, value: str) -> None:
         assert self._input_widget is not None, "input_widget set in on_mount"
+        print("value changed")
         self._sync_state(value, self._input_widget.cursor_position)
 
     def _sync_state(self, value: str, cursor_position: int) -> None:
+        print("syncing state!!")
         self._matches = self._get_results(value, cursor_position)
         self.parent.display = len(self._matches) > 0 and value != ""
+
+        top, right, bottom, left = self.parent.styles.margin
+        x, y, width, height = self._input_widget.content_region
+        line_below_cursor = y + 1
+
+        # TODO: Will need to subtract view_position from cursor_position
+
+        cursor_screen_position = x + (cursor_position - self._input_widget.view_position + 1)
+        self.parent.styles.margin = (line_below_cursor, right, bottom, cursor_screen_position)
+
         self.refresh()
