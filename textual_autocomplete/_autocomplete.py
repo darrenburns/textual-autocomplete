@@ -56,7 +56,6 @@ class DropdownItem:
         self, console: Console, options: ConsoleOptions
     ) -> Measurement:
         measurement = Measurement.get(console, options, self.renderable)
-        print(measurement)
         return measurement
 
 
@@ -129,12 +128,16 @@ class Candidate:
 
 
 class AutoComplete(Widget):
-
     DEFAULT_CSS = """\
 AutoComplete {
+    layer: textual-autocomplete;
+    display: none;
     overflow: hidden auto;
-    height: 1;
+    background: $panel;
+    height: auto;
+    max-height: 1;
     width: auto;
+    margin-top: 5;
 }
     """
 
@@ -183,10 +186,6 @@ class AutoCompleteChild(Widget):
 
     DEFAULT_CSS = """\
 AutoCompleteChild {
-    layer: textual-autocomplete;
-    display: none;
-    margin-top: 3;
-    background: $panel;
     width: auto;
     height: auto;
 }
@@ -266,5 +265,5 @@ AutoCompleteChild {
 
     def _sync_state(self, value: str, cursor_position: int) -> None:
         self._matches = self._get_results(value, cursor_position)
-        self.display = len(self._matches) > 0 and value != ""
+        self.parent.display = len(self._matches) > 0 and value != ""
         self.refresh()
