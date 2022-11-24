@@ -86,9 +86,6 @@ class CompletionExample(App):
             Label(INFO_TEXT, id="info-text"),
             id="search-container",
         )
-        #  TODO: Although... could we just pick the top-most layer on self.screen?
-        #   Or, could we always create a new layer? Can they be created at runtime?
-
         yield Footer()
 
 
