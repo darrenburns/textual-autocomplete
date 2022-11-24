@@ -128,6 +128,11 @@ Dropdown {
     width: auto;
     scrollbar-size-vertical: 1;
 }
+
+Dropdown .autocomplete--substring-match {
+    color: $accent-lighten-2;
+    text-style: bold;
+}
     """
 
     # TODO: Add component classes for each column.
@@ -138,7 +143,7 @@ Dropdown {
 
     def __init__(
         self,
-        get_results: Callable[[str, int], list[Candidate]],
+        results: Callable[[str, int], list[Candidate]],
         track_cursor: bool = True,
         id: str | None = None,
         classes: str | None = None,
@@ -149,7 +154,7 @@ Dropdown {
         Args:
             linked_input: A reference to the Input Widget to add autocomplete to, or a selector/query string
                 identifying the Input Widget that should power this autocomplete.
-            get_results: Function to call to retrieve the list of completion results for the current input value.
+            results: Function to call to retrieve the list of completion results for the current input value.
                 Function takes the current input value and cursor position as arguments, and returns a list of
                 `AutoCompleteOption` which will be displayed as a dropdown list.
             track_cursor: If True, the autocomplete dropdown will follow the cursor position.
@@ -160,14 +165,14 @@ Dropdown {
             id=id,
             classes=classes,
         )
-        self._get_results = get_results
+        self._results = results
         self._matches: list[Candidate] = []
         self.track_cursor = track_cursor
 
     def compose(self) -> ComposeResult:
         yield AutoCompleteChild(
             self.input_widget,
-            self._get_results,
+            self._results,
             self.track_cursor,
         )
 

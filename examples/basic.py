@@ -79,7 +79,7 @@ class CompletionExample(App):
             AutoComplete(
                 Input(id="search-box", placeholder="Search for a UK city..."),
                 Dropdown(
-                    get_results=get_results,
+                    results=get_results,
                     id="my-dropdown",
                 ),
             ),

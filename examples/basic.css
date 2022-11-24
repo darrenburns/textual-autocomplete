@@ -24,7 +24,8 @@ Screen {
 }
 
 #my-dropdown .autocomplete--substring-match {
-    color: $accent-lighten-2;
+    /*color: black;*/
+    /*background: magenta;*/
     text-style: bold;
 }
 
