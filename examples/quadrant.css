@@ -23,7 +23,7 @@ AutoComplete {
     background: $secondary;
 }
 #dropdown-2 .autocomplete--selection-cursor {
-    /*background: $accent-lighten-1;*/
+    background: $accent-lighten-1;
 }
 
 #dropdown-2 .autocomplete--left-column {
@@ -35,11 +35,15 @@ AutoComplete {
 }
 
 #dropdown-3 {
-    border-left: wide $success;
+    border-bottom: wide $success;
     scrollbar-color: $success;
 }
 
 #dropdown-3 .autocomplete--highlight-match {
     color: $text;
     background: $success;
+}
+
+#dropdown-3 .autocomplete--selection-cursor {
+    background: $success 20%;
 }
