@@ -248,8 +248,6 @@ AutoCompleteChild {
         x, y, width, height = self._input_widget.content_region
         line_below_cursor = y + 1
 
-        # TODO: Will need to subtract view_position from cursor_position
-
         cursor_screen_position = x + (
             cursor_position - self._input_widget.view_position
         )

@@ -80,6 +80,11 @@ class CompletionExample(App):
             Label(INFO_TEXT, id="info-text"),
             id="search-container",
         )
+
+        # TODO: Do we need, for now, a special wrapping container for Input
+        #  which adds the extra machinery to forward to AutoComplete?
+        #  e.g. EventForwarder(Input(id="search-box"), forward_to="#my-autocomplete")
+        #  Without this, how would key events get to the AutoComplete?
         yield AutoComplete(
             linked_input="#search-box",
             get_results=get_results,
