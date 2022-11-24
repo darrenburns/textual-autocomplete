@@ -1,7 +1,6 @@
 #grid {
     layout: grid;
     grid-size: 2 3;
-    grid-gutter: 6;
 }
 
 AutoComplete {

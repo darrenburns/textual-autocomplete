@@ -222,7 +222,7 @@ Dropdown .autocomplete--selection-cursor {
 
         # TODO - this watcher wasn't firing, potential Textual issue.
         # watch(
-        #     self.linked_input,
+        #     self.input_widget,
         #     attribute_name="cursor_position",
         #     callback=self._input_cursor_position_changed,
         # )
@@ -266,7 +266,7 @@ Dropdown .autocomplete--selection-cursor {
             cursor_screen_position,
         )
 
-        self.child.refresh(layout=True)
+        self.child.refresh()
 
 
 class DropdownChild(Widget):
@@ -279,11 +279,8 @@ DropdownChild {
 }
     """
 
-    def __init__(
-        self,
-        linked_input: Input,
-        # TODO: Support awaitable and add debounce.
-    ):
+    # TODO: Support awaitable and add debounce.
+    def __init__(self, linked_input: Input):
         """Construct an Autocomplete. Autocomplete only works if your Screen has a dedicated layer
         called `textual-autocomplete`.
 
