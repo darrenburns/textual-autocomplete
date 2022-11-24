@@ -1,3 +1,4 @@
+from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.widgets import Input, Footer
@@ -15,12 +16,19 @@ class Quadrant(App):
             )
             for i in range(1, 4)
         ]
-
+        yield Container()
         yield Container(
             *auto_completes,
             id="grid",
         )
         yield Footer()
+
+    def watch_scroll_y(self, event) -> None:
+        print("SCROLLING DOWN")
+        for dropdown in self.query(Dropdown):
+            dropdown.reposition()
+
+
 
 
 app = Quadrant(css_path="quadrant.css")

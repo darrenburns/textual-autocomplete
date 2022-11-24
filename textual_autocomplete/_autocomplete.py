@@ -9,7 +9,6 @@ from rich.table import Table
 from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
-from textual.binding import Binding
 from textual.geometry import Size, Region
 from textual.reactive import watch
 from textual.widget import Widget
@@ -203,6 +202,7 @@ Dropdown .autocomplete--selection-cursor {
         self._items = items
         self._edge = edge
         self._tracking = tracking
+        self.input_widget: Input | None = None
 
     def compose(self) -> ComposeResult:
         self.child = DropdownChild(self.input_widget)
@@ -232,7 +232,15 @@ Dropdown .autocomplete--selection-cursor {
         #     callback=self._input_cursor_position_changed,
         # )
 
-        self._sync_state(self.input_widget.value, self.input_widget.cursor_position)
+        # TODO: Having to use scroll_target here because scroll_y doesn't fire.
+        #  Will also probably need separate callbacks for x and y.
+        watch(
+            self.screen,
+            attribute_name="scroll_target_y",
+            callback=self.handle_screen_scroll,
+        )
+
+        self.sync_state(self.input_widget.value, self.input_widget.cursor_position)
 
     def cursor_up(self):
         self.child.selected_index -= 1
@@ -245,15 +253,15 @@ Dropdown .autocomplete--selection-cursor {
 
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
         assert self.input_widget is not None, "input_widget set in on_mount"
-        self._sync_state(self.input_widget.value, cursor_position)
+        self.sync_state(self.input_widget.value, cursor_position)
 
     def _input_value_changed(self, value: str) -> None:
         assert self.input_widget is not None, "input_widget set in on_mount"
-        self._sync_state(value, self.input_widget.cursor_position)
+        self.sync_state(value, self.input_widget.cursor_position)
 
-    def _sync_state(self, value: str, cursor_position: int) -> None:
+    def sync_state(self, value: str, input_cursor_position: int) -> None:
         if callable(self._items):
-            matches = self._items(value, cursor_position)
+            matches = self._items(value, input_cursor_position)
         else:
             matches = [
                 DropdownItem(
@@ -268,20 +276,32 @@ Dropdown .autocomplete--selection-cursor {
         self.child.matches = matches
         self.display = len(matches) > 0 and value != ""
         self.cursor_home()
+        self.reposition(input_cursor_position)
+        self.child.refresh()
+
+    def handle_screen_scroll(self, old: float, new: float) -> None:
+        self.reposition(scroll_target_adjust_y=int(old) - int(new))
+
+    def reposition(
+        self,
+        input_cursor_position: int | None = None,
+        scroll_target_adjust_y: int = 0,
+    ) -> None:
+        if input_cursor_position is None:
+            input_cursor_position = self.input_widget.cursor_position
 
         top, right, bottom, left = self.styles.margin
         x, y, width, height = self.input_widget.content_region
-        line_below_cursor = y + 1
+        line_below_cursor = y + 1 + scroll_target_adjust_y
 
-        cursor_screen_position = x + (cursor_position - self.input_widget.view_position)
+        cursor_screen_position = x + (
+                input_cursor_position - self.input_widget.view_position)
         self.styles.margin = (
             line_below_cursor,
             right,
             bottom,
             cursor_screen_position,
         )
-
-        self.child.refresh()
 
 
 class DropdownChild(Widget):
@@ -334,9 +354,11 @@ DropdownChild {
 
     @selected_index.setter
     def selected_index(self, value: int) -> None:
-        self._selected_index = value % len(self.matches)
+        self._selected_index = value % max(len(self.matches), 1)
         # It's easier to just ask our parent to scroll here rather
         # than having to make sure we do it in the parent each time we
         # update the index. We always appear under the same parent anyway.
-        self.parent.scroll_to_region(Region(x=self.virtual_region.x, y=self.virtual_region.y + self._selected_index, height=1, width=1))
+        self.parent.scroll_to_region(Region(x=self.virtual_region.x,
+                                            y=self.virtual_region.y + self._selected_index,
+                                            height=1, width=1))
         self.refresh()
