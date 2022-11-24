@@ -21,7 +21,13 @@ Screen {
     color: $accent-lighten-2;
     text-style: bold;
 }
+
 /*#my-autocomplete .autocomplete--highlight {*/
 /*    background: $boost;*/
 /*}*/
+
+#info-text {
+    padding: 2 8;
+    color: $accent-darken-1;
+}
 
