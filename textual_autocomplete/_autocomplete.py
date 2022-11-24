@@ -38,11 +38,15 @@ class DropdownRender:
 
         for match in self.matches:
             if self.filter != "":
-                match.main.highlight_words(
-                    [self.filter],
-                    style=self.component_styles["substring-match"],
-                    case_sensitive=False,
-                )
+                if match.highlight_ranges is not None:
+                    for start, end in match.highlight_ranges:
+                        match.main.stylize(self.component_styles["substring-match"], start, end)
+                else:
+                    match.main.highlight_words(
+                        [self.filter],
+                        style=self.component_styles["substring-match"],
+                        case_sensitive=False,
+                    )
 
             table.add_row(match.left_meta, match.main, match.right_meta)
 
