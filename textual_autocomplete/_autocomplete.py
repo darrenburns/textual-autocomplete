@@ -156,7 +156,7 @@ Dropdown .autocomplete--highlight-match {
 }
 
 Dropdown .autocomplete--selection-cursor {
-    background: $panel-lighten-2;
+    background: $boost 8%;
 }
     """
 
