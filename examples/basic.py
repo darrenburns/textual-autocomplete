@@ -7,9 +7,10 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container
 from textual.renderables._blend_colors import blend_colors
+from textual.widget import Widget
 from textual.widgets import Input, Footer, Label
 
-from textual_autocomplete._autocomplete import AutoComplete, Candidate
+from textual_autocomplete._autocomplete import AutoComplete, Candidate, Dropdown
 
 INFO_TEXT = """\
 Cities are ranked by population.
@@ -76,31 +77,32 @@ class CompletionExample(App):
     def compose(self) -> ComposeResult:
         yield Container(
             Label("Search for a city", id="lead-text"),
-            Input(id="search-box"),
+            AutoComplete(
+                Input(id="search-box"),
+                Dropdown(
+                    get_results=get_results,
+                    id="my-dropdown",
+                ),
+            ),
             Label(INFO_TEXT, id="info-text"),
             id="search-container",
         )
 
         # TODO: Do we need, for now, a special wrapping container for Input
         #  which adds the extra machinery to forward to AutoComplete?
-        #  e.g. EventForwarder(Input(id="search-box"), forward_to="#my-autocomplete")
+        #  e.g. EventForwarder(Input(id="search-box"), forward_to="#my-dropdown")
         #  Without this, how would key events get to the AutoComplete?
         #  If we set up this proxy, can we get rid of the linked_input param on
         #  AutoComplete too, and just have the proxy set it up?
         #  BETTER IDEA?...
         #  What if we only needed to do AutoComplete(Input(...))
-        #  Inside AutoComplete.on_mount we could do self.screen.mount(AutoCompleteDropdown)
+        #  Inside AutoComplete.on_mount we could do self.screen.mount(Dropdown)
         #  This would give us the ability to both respond to key events such as up and down
         #  from the Input, AND let us mount things on the Screen.
         #  This means from the user's POV, all they would need is the appropriately
         #  named layer.
         #  Although... could we just pick the top-most layer on self.screen?
         #  Or, could we always create a new layer? Can they be created at runtime?
-        yield AutoComplete(
-            linked_input="#search-box",
-            get_results=get_results,
-            id="my-autocomplete",
-        )
 
         yield Footer()
 

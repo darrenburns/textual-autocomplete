@@ -9,7 +9,7 @@ Screen {
     padding: 1 1 1 0;
 }
 
-#my-autocomplete {
+#my-dropdown {
     width: 32;
     max-height: 6;
     /*border-left: wide magenta;*/
@@ -17,17 +17,18 @@ Screen {
     /*background: darkgreen;*/
 }
 
-#my-autocomplete .autocomplete--substring-match {
+#my-dropdown .autocomplete--substring-match {
     color: $accent-lighten-2;
     text-style: bold;
 }
 
-/*#my-autocomplete .autocomplete--highlight {*/
+/*#my-dropdown .autocomplete--highlight {*/
 /*    background: $boost;*/
 /*}*/
 
 #info-text {
     padding: 2 8;
     color: $accent-darken-1;
+    height: auto;
 }
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Callable, ClassVar, Mapping
+from typing import Iterable, Callable, ClassVar, Mapping, cast
 
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.style import Style
@@ -85,8 +85,35 @@ class Candidate:
 
 
 class AutoComplete(Widget):
+
     DEFAULT_CSS = """\
 AutoComplete {
+    height: auto;
+}
+    """
+
+    def __init__(
+        self,
+        input: Input,
+        dropdown: Dropdown,
+        id: str | None = None,
+        classes: str | None = None,
+    ):
+        super().__init__(id=id, classes=classes)
+        self.input = input
+        self.dropdown = dropdown
+
+    def compose(self) -> ComposeResult:
+        yield self.input
+
+    def on_mount(self, event: events.Mount) -> None:
+        self.dropdown.input_widget = self.input
+        self.screen.mount(self.dropdown)
+
+
+class Dropdown(Widget):
+    DEFAULT_CSS = """\
+Dropdown {
     layer: textual-autocomplete;
     /* to prevent parent `align` confusing things, we dock to remove from flow */
     dock: top;
@@ -108,7 +135,6 @@ AutoComplete {
 
     def __init__(
         self,
-        linked_input: Input | str,
         get_results: Callable[[str, int], list[Candidate]],
         track_cursor: bool = True,
         id: str | None = None,
@@ -133,13 +159,11 @@ AutoComplete {
         )
         self._get_results = get_results
         self._matches: list[Candidate] = []
-        self._input_widget: Input | None = None
-        self.linked_input = linked_input
         self.track_cursor = track_cursor
 
     def compose(self) -> ComposeResult:
         yield AutoCompleteChild(
-            self.linked_input,
+            self.input_widget,
             self._get_results,
             self.track_cursor,
         )
