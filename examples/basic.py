@@ -7,7 +7,6 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container
 from textual.renderables._blend_colors import blend_colors
-from textual.widget import Widget
 from textual.widgets import Input, Footer, Label
 
 from textual_autocomplete._autocomplete import AutoComplete, Candidate, Dropdown
@@ -76,9 +75,9 @@ class CompletionExample(App):
 
     def compose(self) -> ComposeResult:
         yield Container(
-            Label("Search for a UK city", id="lead-text"),
+            Label("Textual Autocomplete", id="lead-text"),
             AutoComplete(
-                Input(id="search-box"),
+                Input(id="search-box", placeholder="Search for a UK city..."),
                 Dropdown(
                     get_results=get_results,
                     id="my-dropdown",

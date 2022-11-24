@@ -10,6 +10,8 @@ Screen {
 #lead-text {
     width: 100%;
     content-align: center middle;
+    color: $secondary;
+    text-style: bold;
     padding: 1 1 1 0;
 }
 
@@ -31,8 +33,10 @@ Screen {
 /*}*/
 
 #info-text {
-    padding: 2 8;
-    color: $success 50%;
+    padding: 1 8;
+    color: $text;
     height: auto;
+    width: 100%;
+    text-align: center;
 }
 
