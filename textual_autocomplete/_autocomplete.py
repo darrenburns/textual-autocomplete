@@ -9,7 +9,8 @@ from rich.table import Table
 from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
-from textual.geometry import Size
+from textual.binding import Binding
+from textual.geometry import Size, Region
 from textual.reactive import watch
 from textual.widget import Widget
 from textual.widgets import Input
@@ -133,6 +134,11 @@ AutoComplete {
 
     def on_key(self, event: events.Key) -> None:
         print(f"KEY === {event.key}")
+        key = event.key
+        if key == "down":
+            self.dropdown.cursor_down()
+        elif key == "up":
+            self.dropdown.cursor_up()
 
 
 class Dropdown(Widget):
@@ -197,7 +203,6 @@ Dropdown .autocomplete--selection-cursor {
         self._items = items
         self._edge = edge
         self._tracking = tracking
-        self._selected_index: int | None = None
 
     def compose(self) -> ComposeResult:
         self.child = DropdownChild(self.input_widget)
@@ -229,6 +234,15 @@ Dropdown .autocomplete--selection-cursor {
 
         self._sync_state(self.input_widget.value, self.input_widget.cursor_position)
 
+    def cursor_up(self):
+        self.child.selected_index -= 1
+
+    def cursor_down(self):
+        self.child.selected_index += 1
+
+    def cursor_home(self):
+        self.child.selected_index = 0
+
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
         assert self.input_widget is not None, "input_widget set in on_mount"
         self._sync_state(self.input_widget.value, cursor_position)
@@ -253,6 +267,7 @@ Dropdown .autocomplete--selection-cursor {
 
         self.child.matches = matches
         self.display = len(matches) > 0 and value != ""
+        self.cursor_home()
 
         top, right, bottom, left = self.styles.margin
         x, y, width, height = self.input_widget.content_region
@@ -291,6 +306,7 @@ DropdownChild {
         super().__init__()
         self.matches: list[DropdownItem] = []
         self.linked_input = linked_input
+        self._selected_index: int = 0
 
     def render(self) -> RenderableType:
         assert self.linked_input is not None, "input_widget set in on_mount"
@@ -305,7 +321,7 @@ DropdownChild {
         return DropdownRender(
             filter=self.linked_input.value,
             matches=self.matches,
-            selected_index=0,
+            selected_index=self.selected_index,
             component_styles=component_styles,
         )
 
@@ -313,11 +329,14 @@ DropdownChild {
         return len(self.matches)
 
     @property
-    def selected_index(self) -> int | None:
+    def selected_index(self) -> int:
         return self._selected_index
 
     @selected_index.setter
-    def selected_index(self, value: int | None) -> None:
-        if value is None:
-            self._selected_index = None
+    def selected_index(self, value: int) -> None:
         self._selected_index = value % len(self.matches)
+        # It's easier to just ask our parent to scroll here rather
+        # than having to make sure we do it in the parent each time we
+        # update the index. We always appear under the same parent anyway.
+        self.parent.scroll_to_region(Region(x=self.virtual_region.x, y=self.virtual_region.y + self._selected_index, height=1, width=1))
+        self.refresh()

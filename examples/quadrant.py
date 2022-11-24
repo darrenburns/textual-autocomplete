@@ -1,6 +1,6 @@
 from textual.app import App, ComposeResult
 from textual.containers import Container
-from textual.widgets import Input
+from textual.widgets import Input, Footer
 
 from examples.basic import ITEMS
 from textual_autocomplete._autocomplete import AutoComplete, Dropdown
@@ -20,11 +20,7 @@ class Quadrant(App):
             *auto_completes,
             id="grid",
         )
-
-    def on_input_changed(self, event: Input.Changed) -> None:
-        for input in list(self.query(Input))[1:]:
-            input.cursor_position = event.input.cursor_position
-            input.value = event.value
+        yield Footer()
 
 
 app = Quadrant(css_path="quadrant.css")
