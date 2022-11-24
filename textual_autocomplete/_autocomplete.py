@@ -14,10 +14,6 @@ from textual.widget import Widget
 from textual.widgets import Input
 
 
-class AutoCompleteError(Exception):
-    pass
-
-
 class DropdownRender:
     def __init__(
         self,
@@ -31,12 +27,14 @@ class DropdownRender:
         self.highlight_index = highlight_index
         self.component_styles = component_styles
 
-    @property
-    def _table(self) -> Table:
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        get_style = self.component_styles.get
         table = Table.grid(expand=True)
-        table.add_column("left_meta", justify="left")
-        table.add_column("main")
-        table.add_column("right_meta", justify="right")
+        table.add_column("left_meta", justify="left", style=get_style("left-column"))
+        table.add_column("main", style=get_style("main-column"))
+        table.add_column("right_meta", justify="right", style=get_style("right-column"))
 
         for match in self.matches:
             if self.filter != "":
@@ -48,12 +46,7 @@ class DropdownRender:
 
             table.add_row(match.left_meta, match.main, match.right_meta)
 
-        return table
-
-    def __rich_console__(
-        self, console: Console, options: ConsoleOptions
-    ) -> RenderResult:
-        yield self._table
+        yield table
 
 
 @dataclass
@@ -85,7 +78,6 @@ class DropdownItem:
 
 
 class AutoComplete(Widget):
-
     DEFAULT_CSS = """\
 AutoComplete {
     height: auto;
@@ -114,6 +106,7 @@ AutoComplete {
     def on_key(self, event: events.Key) -> None:
         print(f"KEY === {event.key}")
 
+
 class Dropdown(Widget):
     DEFAULT_CSS = """\
 Dropdown {
@@ -139,6 +132,9 @@ Dropdown .autocomplete--substring-match {
     COMPONENT_CLASSES: ClassVar[set[str]] = {
         "autocomplete--highlight",
         "autocomplete--substring-match",
+        "autocomplete--left-column",
+        "autocomplete--main-column",
+        "autocomplete--right-column",
     }
 
     def __init__(
@@ -180,14 +176,6 @@ Dropdown .autocomplete--substring-match {
         if not "textual-autocomplete" in screen_layers:
             screen_layers.append("textual-autocomplete")
         self.screen.styles.layers = tuple(screen_layers)
-
-
-# def _default_get_items(
-#     dropdown_items: list[DropdownItem],
-#     value: str,
-#     cursor_position: int,
-# ) ->:
-#     pass
 
 
 class AutoCompleteChild(Widget):
@@ -257,14 +245,19 @@ AutoCompleteChild {
     def render(self) -> RenderableType:
         assert self._input_widget is not None, "input_widget set in on_mount"
         parent_component = self.parent.get_component_rich_style
+        component_styles = {
+            "highlight": parent_component("autocomplete--highlight"),
+            "substring-match": parent_component("autocomplete--substring-match"),
+            "left-column": parent_component("autocomplete--left-column"),
+            "main-column": parent_component("autocomplete--main-column"),
+            "right-column": parent_component("autocomplete--right-column"),
+        }
+        print(component_styles)
         return DropdownRender(
             filter=self._input_widget.value,
             matches=self._matches,
             highlight_index=0,
-            component_styles={
-                "highlight": parent_component("autocomplete--highlight"),
-                "substring-match": parent_component("autocomplete--substring-match"),
-            },
+            component_styles=component_styles,
         )
 
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
@@ -288,7 +281,8 @@ AutoCompleteChild {
                     main=item.main.copy(),
                     right_meta=item.right_meta.copy(),
                 )
-                for item in self.items if value.lower() in item.main.plain.lower()
+                for item in self.items
+                if value.lower() in item.main.plain.lower()
             ]
         self.parent.display = len(self._matches) > 0 and value != ""
 

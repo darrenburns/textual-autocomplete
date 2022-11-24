@@ -19,18 +19,31 @@ Screen {
     width: 32;
     max-height: 6;
     /*border-left: wide magenta;*/
-    /*scrollbar-color: red;*/
+    /*scrollbar-color: greenyellow;*/
     /*background: darkgreen;*/
 }
 
-#my-dropdown .autocomplete--substring-match {
-    /*color: black;*/
-    /*background: magenta;*/
-    text-style: bold;
-}
+/*#my-dropdown .autocomplete--substring-match {*/
+/*    color: yellow;*/
+/*    background: magenta;*/
+/*    text-style: bold;*/
+/*}*/
 
 /*#my-dropdown .autocomplete--highlight {*/
 /*    background: $boost;*/
+/*}*/
+
+/*#my-dropdown .autocomplete--left-column {*/
+/*    background: mediumpurple;*/
+/*}*/
+
+
+/*#my-dropdown .autocomplete--main-column {*/
+/*    background: deeppink;*/
+/*}*/
+
+/*#my-dropdown .autocomplete--right-column {*/
+/*    background: lightseagreen;*/
 /*}*/
 
 #info-text {

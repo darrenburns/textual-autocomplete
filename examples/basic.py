@@ -64,8 +64,9 @@ def get_items(value: str, cursor_position: int) -> list[DropdownItem]:
         color = blend_colors(Color.parse("#e86c4a"), Color.parse("#4ed43f"), ratio)
         items.append(
             DropdownItem(
-                Text(str(rank), style="#a1a1a1"), Text(city),
-                Text(population, style=Style.from_color(color))
+                Text(str(rank), style="#a1a1a1"),
+                Text(city),
+                Text(population, style=Style.from_color(color)),
             )
         )
     return [c for c in items if value.lower() in c.main.plain.lower()]
@@ -74,9 +75,7 @@ def get_items(value: str, cursor_position: int) -> list[DropdownItem]:
 class CompletionExample(App):
     CSS_PATH = "basic.css"
 
-    BINDINGS = [
-        Binding("ctrl+d", "toggle_dark", "Day/Night")
-    ]
+    BINDINGS = [Binding("ctrl+d", "toggle_dark", "Day/Night")]
 
     def compose(self) -> ComposeResult:
         yield Container(
@@ -84,8 +83,8 @@ class CompletionExample(App):
             AutoComplete(
                 Input(id="search-box", placeholder="Search for a UK city..."),
                 Dropdown(
-                    results=ITEMS,
-                    # results=get_items,
+                    results=ITEMS,  # Using a list
+                    # results=get_items,  # Using a callback to dynamically generate items
                     id="my-dropdown",
                 ),
             ),
