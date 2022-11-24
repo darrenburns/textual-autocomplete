@@ -8,8 +8,8 @@ packages = [{ include = "textual_autocomplete" }]
 
 [tool.poetry.dependencies]
 python = "^3.7.8"
-textual = {path="../textual", develop=true}
-
+#textual = {path="../textual", develop=true}
+textual = ">=0.5.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^0.991"
