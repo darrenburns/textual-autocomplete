@@ -87,6 +87,15 @@ class CompletionExample(App):
         #  Without this, how would key events get to the AutoComplete?
         #  If we set up this proxy, can we get rid of the linked_input param on
         #  AutoComplete too, and just have the proxy set it up?
+        #  BETTER IDEA?...
+        #  What if we only needed to do AutoComplete(Input(...))
+        #  Inside AutoComplete.on_mount we could do self.screen.mount(AutoCompleteDropdown)
+        #  This would give us the ability to both respond to key events such as up and down
+        #  from the Input, AND let us mount things on the Screen.
+        #  This means from the user's POV, all they would need is the appropriately
+        #  named layer.
+        #  Although... could we just pick the top-most layer on self.screen?
+        #  Or, could we always create a new layer? Can they be created at runtime?
         yield AutoComplete(
             linked_input="#search-box",
             get_results=get_results,
