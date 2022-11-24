@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Callable, ClassVar, Mapping, cast
+from typing import Iterable, Callable, ClassVar, Mapping
 
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.style import Style
@@ -171,6 +171,13 @@ Dropdown {
             self.track_cursor,
         )
 
+    def on_mount(self, event: events.Mount) -> None:
+        screen_layers = list(self.screen.styles.layers)
+        if not "textual-autocomplete" in screen_layers:
+            screen_layers.append("textual-autocomplete")
+        self.screen.styles.layers = tuple(screen_layers)
+
+
 
 class AutoCompleteChild(Widget):
     """An autocompletion dropdown widget. This widget gets linked to an Input widget, and is automatically
@@ -218,13 +225,6 @@ AutoCompleteChild {
             self._input_widget = self.app.query_one(self.linked_input, Input)
         else:
             self._input_widget = self.linked_input
-
-        # A quick sanity check - make sure we have the appropriate layer available
-        # TODO - think about whether it makes sense to enforce this.
-        if "textual-autocomplete" not in self.screen.layers:
-            raise AutoCompleteError(
-                "Screen must have a layer called `textual-autocomplete`."
-            )
 
         # Configure the watch methods - we want to subscribe to a couple of the
         # reactives inside the Input so that we can react accordingly.
