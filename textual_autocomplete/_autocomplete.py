@@ -89,6 +89,7 @@ class AutoComplete(Widget):
     DEFAULT_CSS = """\
 AutoComplete {
     height: auto;
+    align-horizontal: center;
 }
     """
 
@@ -110,6 +111,8 @@ AutoComplete {
         self.dropdown.input_widget = self.input
         self.screen.mount(self.dropdown)
 
+    def on_key(self, event: events.Key) -> None:
+        print(f"KEY === {event.key}")
 
 class Dropdown(Widget):
     DEFAULT_CSS = """\

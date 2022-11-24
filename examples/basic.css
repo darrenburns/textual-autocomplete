@@ -1,6 +1,10 @@
 Screen {
     layers: textual-autocomplete;
-    align: center middle;
+    align-horizontal: center;
+}
+
+#search-box {
+    width: 75%;
 }
 
 #lead-text {
@@ -28,7 +32,7 @@ Screen {
 
 #info-text {
     padding: 2 8;
-    color: $accent-darken-1;
+    color: $success 50%;
     height: auto;
 }
 

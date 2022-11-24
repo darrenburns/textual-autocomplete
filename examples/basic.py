@@ -60,7 +60,7 @@ def get_results(value: str, cursor_position: int) -> list[Candidate]:
         color = blend_colors(Color.parse("#e86c4a"), Color.parse("#4ed43f"), ratio)
         candidates.append(
             Candidate(
-                Text(str(rank)), Text(city),
+                Text(str(rank), style="#a1a1a1"), Text(city),
                 Text(population, style=Style.from_color(color))
             )
         )
@@ -76,7 +76,7 @@ class CompletionExample(App):
 
     def compose(self) -> ComposeResult:
         yield Container(
-            Label("Search for a city", id="lead-text"),
+            Label("Search for a UK city", id="lead-text"),
             AutoComplete(
                 Input(id="search-box"),
                 Dropdown(
