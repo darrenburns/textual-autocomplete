@@ -22,13 +22,13 @@ Screen {
     /*background: darkgreen;*/
 }
 
-/*#my-dropdown .autocomplete--substring-match {*/
+/*#my-dropdown .autocomplete--highlight-match {*/
 /*    color: yellow;*/
 /*    background: magenta;*/
 /*    text-style: bold;*/
 /*}*/
 
-/*#my-dropdown .autocomplete--highlight {*/
+/*#my-dropdown .autocomplete--cursor {*/
 /*    background: $boost;*/
 /*}*/
 

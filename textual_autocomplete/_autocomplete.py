@@ -19,12 +19,12 @@ class DropdownRender:
         self,
         filter: str,
         matches: Iterable[DropdownItem],
-        highlight_index: int,
+        cursor_index: int,
         component_styles: Mapping[str, Style],
     ) -> None:
         self.filter = filter
         self.matches = matches
-        self.highlight_index = highlight_index
+        self.cursor_index = cursor_index
         self.component_styles = component_styles
 
     def __rich_console__(
@@ -36,19 +36,24 @@ class DropdownRender:
         table.add_column("main", style=get_style("main-column"))
         table.add_column("right_meta", justify="right", style=get_style("right-column"))
 
+        add_row = table.add_row
         for match in self.matches:
+            main_text = match.main
             if self.filter != "":
+                highlight_style = self.component_styles["highlight-match"]
                 if match.highlight_ranges is not None:
+                    # If the user has supplied their own ranges to highlight
                     for start, end in match.highlight_ranges:
-                        match.main.stylize(self.component_styles["substring-match"], start, end)
+                        main_text.stylize(highlight_style, start, end)
                 else:
-                    match.main.highlight_words(
+                    # Otherwise, by default, we highlight case-insensitive substrings
+                    main_text.highlight_words(
                         [self.filter],
-                        style=self.component_styles["substring-match"],
+                        highlight_style,
                         case_sensitive=False,
                     )
 
-            table.add_row(match.left_meta, match.main, match.right_meta)
+            add_row(match.left_meta, match.main, match.right_meta)
 
         yield table
 
@@ -135,19 +140,20 @@ Dropdown {
     scrollbar-size-vertical: 1;
 }
 
-Dropdown .autocomplete--substring-match {
+Dropdown .autocomplete--highlight-match {
     color: $accent-lighten-2;
     text-style: bold;
 }
     """
 
     COMPONENT_CLASSES: ClassVar[set[str]] = {
-        "autocomplete--highlight",
-        "autocomplete--substring-match",
+        "autocomplete--cursor",
+        "autocomplete--highlight-match",
         "autocomplete--left-column",
         "autocomplete--main-column",
         "autocomplete--right-column",
     }
+
     def __init__(
         self,
         results: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
@@ -197,7 +203,7 @@ AutoCompleteChild {
 
     def __init__(
         self,
-        linked_input: Input | str,
+        linked_input: Input,
         items: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
         # TODO: Support awaitable and add debounce.
     ):
@@ -214,64 +220,52 @@ AutoCompleteChild {
         super().__init__()
         self.items = items
         self._matches: list[DropdownItem] = []
-        self._input_widget: Input | None = None
         self.linked_input = linked_input
 
-        # Rich style information - these are actually component classes
-        # on the parent wrapper container to make things more convenient.
-        self._substring_match_style: Style | None = None
-        self._highlight_style: Style | None = None
-
     def on_mount(self, event: events.Mount) -> None:
-        # Ensure we have a reference to the Input widget we're subscribing to
-        if isinstance(self.linked_input, str):
-            self._input_widget = self.app.query_one(self.linked_input, Input)
-        else:
-            self._input_widget = self.linked_input
-
         # Configure the watch methods - we want to subscribe to a couple of the
         # reactives inside the Input so that we can react accordingly.
         # TODO: Error cases - Handle case where reference to input widget no
         #  longer exists, for example
         watch(
-            self._input_widget,
+            self.linked_input,
             attribute_name="value",
             callback=self._input_value_changed,
         )
 
         # TODO - this watcher wasn't firing, potential Textual issue.
         # watch(
-        #     self._input_widget,
+        #     self.linked_input,
         #     attribute_name="cursor_position",
         #     callback=self._input_cursor_position_changed,
         # )
 
-        self._sync_state(self._input_widget.value, self._input_widget.cursor_position)
+        self._sync_state(self.linked_input.value, self.linked_input.cursor_position)
 
     def render(self) -> RenderableType:
-        assert self._input_widget is not None, "input_widget set in on_mount"
+        assert self.linked_input is not None, "input_widget set in on_mount"
         parent_component = self.parent.get_component_rich_style
         component_styles = {
-            "highlight": parent_component("autocomplete--highlight"),
-            "substring-match": parent_component("autocomplete--substring-match"),
+            "cursor": parent_component("autocomplete--cursor"),
+            "highlight-match": parent_component("autocomplete--highlight-match"),
             "left-column": parent_component("autocomplete--left-column"),
             "main-column": parent_component("autocomplete--main-column"),
             "right-column": parent_component("autocomplete--right-column"),
         }
         return DropdownRender(
-            filter=self._input_widget.value,
+            filter=self.linked_input.value,
             matches=self._matches,
-            highlight_index=0,
+            cursor_index=0,
             component_styles=component_styles,
         )
 
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
-        assert self._input_widget is not None, "input_widget set in on_mount"
-        self._sync_state(self._input_widget.value, cursor_position)
+        assert self.linked_input is not None, "input_widget set in on_mount"
+        self._sync_state(self.linked_input.value, cursor_position)
 
     def _input_value_changed(self, value: str) -> None:
-        assert self._input_widget is not None, "input_widget set in on_mount"
-        self._sync_state(value, self._input_widget.cursor_position)
+        assert self.linked_input is not None, "input_widget set in on_mount"
+        self._sync_state(value, self.linked_input.cursor_position)
 
     def _sync_state(self, value: str, cursor_position: int) -> None:
         if callable(self.items):
@@ -289,11 +283,11 @@ AutoCompleteChild {
         self.parent.display = len(self._matches) > 0 and value != ""
 
         top, right, bottom, left = self.parent.styles.margin
-        x, y, width, height = self._input_widget.content_region
+        x, y, width, height = self.linked_input.content_region
         line_below_cursor = y + 1
 
         cursor_screen_position = x + (
-            cursor_position - self._input_widget.view_position
+            cursor_position - self.linked_input.view_position
         )
         self.parent.styles.margin = (
             line_below_cursor,
