@@ -85,6 +85,8 @@ class CompletionExample(App):
         #  which adds the extra machinery to forward to AutoComplete?
         #  e.g. EventForwarder(Input(id="search-box"), forward_to="#my-autocomplete")
         #  Without this, how would key events get to the AutoComplete?
+        #  If we set up this proxy, can we get rid of the linked_input param on
+        #  AutoComplete too, and just have the proxy set it up?
         yield AutoComplete(
             linked_input="#search-box",
             get_results=get_results,
