@@ -1,0 +1,38 @@
+#grid {
+    layout: grid;
+    grid-size: 2 3;
+    grid-gutter: 6;
+}
+
+.dropdown {
+    max-width: 36;
+}
+
+#dropdown-2 {
+    background: $accent;
+    scrollbar-size-vertical: 2;
+    scrollbar-color: $secondary;
+}
+
+#dropdown-2 .autocomplete--highlight-match {
+    color: $text;
+    background: $secondary;
+}
+
+#dropdown-2 .autocomplete--left-column {
+    background: $accent-darken-1;
+}
+
+#dropdown-2 .autocomplete--right-column {
+    background: $accent-darken-2;
+}
+
+#dropdown-3 {
+    border-left: wide $success;
+    scrollbar-color: $success;
+}
+
+#dropdown-3 .autocomplete--highlight-match {
+    color: $text;
+    background: $success;
+}

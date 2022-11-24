@@ -19,12 +19,12 @@ class DropdownRender:
         self,
         filter: str,
         matches: Iterable[DropdownItem],
-        cursor_index: int,
+        selected_index: int,
         component_styles: Mapping[str, Style],
     ) -> None:
         self.filter = filter
         self.matches = matches
-        self.cursor_index = cursor_index
+        self.selection_cursor_index = selected_index
         self.component_styles = component_styles
 
     def __rich_console__(
@@ -37,7 +37,7 @@ class DropdownRender:
         table.add_column("right_meta", justify="right", style=get_style("right-column"))
 
         add_row = table.add_row
-        for match in self.matches:
+        for index, match in enumerate(self.matches):
             main_text = match.main
             if self.filter != "":
                 highlight_style = self.component_styles["highlight-match"]
@@ -53,7 +53,17 @@ class DropdownRender:
                         case_sensitive=False,
                     )
 
-            add_row(match.left_meta, match.main, match.right_meta)
+            # If the cursor is on this row, highlight it
+            additional_row_style = ""
+            if index == self.selection_cursor_index:
+                additional_row_style = self.component_styles["selection-cursor"]
+
+            add_row(
+                match.left_meta,
+                match.main,
+                match.right_meta,
+                style=additional_row_style,
+            )
 
         yield table
 
@@ -144,10 +154,14 @@ Dropdown .autocomplete--highlight-match {
     color: $accent-lighten-2;
     text-style: bold;
 }
+
+Dropdown .autocomplete--selection-cursor {
+    background: $panel-lighten-2;
+}
     """
 
     COMPONENT_CLASSES: ClassVar[set[str]] = {
-        "autocomplete--cursor",
+        "autocomplete--selection-cursor",
         "autocomplete--highlight-match",
         "autocomplete--left-column",
         "autocomplete--main-column",
@@ -177,6 +191,7 @@ Dropdown .autocomplete--highlight-match {
         )
         self._results = results
         self._matches: list[DropdownItem] = []
+        self._selected_index: int | None = None
 
     def compose(self) -> ComposeResult:
         yield AutoCompleteChild(
@@ -246,7 +261,7 @@ AutoCompleteChild {
         assert self.linked_input is not None, "input_widget set in on_mount"
         parent_component = self.parent.get_component_rich_style
         component_styles = {
-            "cursor": parent_component("autocomplete--cursor"),
+            "selection-cursor": parent_component("autocomplete--selection-cursor"),
             "highlight-match": parent_component("autocomplete--highlight-match"),
             "left-column": parent_component("autocomplete--left-column"),
             "main-column": parent_component("autocomplete--main-column"),
@@ -255,9 +270,19 @@ AutoCompleteChild {
         return DropdownRender(
             filter=self.linked_input.value,
             matches=self._matches,
-            cursor_index=0,
+            selected_index=0,
             component_styles=component_styles,
         )
+
+    @property
+    def selected_index(self) -> int | None:
+        return self._selected_index
+
+    @selected_index.setter
+    def selected_index(self, value: int | None) -> None:
+        if value is None:
+            self._selected_index = None
+        self._selected_index = value % len(self._matches)
 
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
         assert self.linked_input is not None, "input_widget set in on_mount"
@@ -286,9 +311,7 @@ AutoCompleteChild {
         x, y, width, height = self.linked_input.content_region
         line_below_cursor = y + 1
 
-        cursor_screen_position = x + (
-            cursor_position - self.linked_input.view_position
-        )
+        cursor_screen_position = x + (cursor_position - self.linked_input.view_position)
         self.parent.styles.margin = (
             line_below_cursor,
             right,
