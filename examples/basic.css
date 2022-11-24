@@ -1,6 +1,5 @@
 Screen {
     /*layers: textual-autocomplete;*/
-    align-horizontal: center;
 }
 
 #search-box {
@@ -16,8 +15,8 @@ Screen {
 }
 
 #my-dropdown {
-    width: 32;
-    max-height: 6;
+    max-width: 40;
+    /*max-height: 6;*/
     /*border-left: wide magenta;*/
     /*scrollbar-color: greenyellow;*/
     /*background: darkgreen;*/

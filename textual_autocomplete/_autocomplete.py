@@ -6,7 +6,7 @@ from typing import Iterable, Callable, ClassVar, Mapping
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.style import Style
 from rich.table import Table
-from rich.text import Text
+from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
 from textual.reactive import watch
@@ -71,10 +71,18 @@ class DropdownItem:
 
     """
 
-    left_meta: Text = ""
-    main: Text = ""
-    right_meta: Text = ""
+    left_meta: TextType = ""
+    main: TextType = ""
+    right_meta: TextType = ""
     highlight_ranges: Iterable[tuple[int, int]] | None = None
+
+    def __post_init__(self):
+        if isinstance(self.left_meta, str):
+            self.left_meta = Text(self.left_meta)
+        if isinstance(self.main, str):
+            self.main = Text(self.main)
+        if isinstance(self.right_meta, str):
+            self.right_meta = Text(self.right_meta)
 
 
 class AutoComplete(Widget):
@@ -119,6 +127,7 @@ Dropdown {
     height: auto;
     max-height: 12;
     width: auto;
+    max-width: 1fr;
     scrollbar-size-vertical: 1;
 }
 
@@ -128,7 +137,6 @@ Dropdown .autocomplete--substring-match {
 }
     """
 
-    # TODO: Add component classes for each column.
     COMPONENT_CLASSES: ClassVar[set[str]] = {
         "autocomplete--highlight",
         "autocomplete--substring-match",
@@ -136,11 +144,9 @@ Dropdown .autocomplete--substring-match {
         "autocomplete--main-column",
         "autocomplete--right-column",
     }
-
     def __init__(
         self,
         results: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
-        track_cursor: bool = True,
         id: str | None = None,
         classes: str | None = None,
     ):
@@ -152,7 +158,6 @@ Dropdown .autocomplete--substring-match {
                 of dropdown items for the current input value and cursor position.
                 Function takes the current input value and cursor position as arguments, and returns a list of
                 `DropdownItem` which will be displayed in the dropdown list.
-            track_cursor: If True, the autocomplete dropdown will follow the cursor position.
             id: The ID of the widget, allowing you to directly refer to it using CSS and queries.
             classes: The classes of this widget, a space separated string.
         """
@@ -162,13 +167,11 @@ Dropdown .autocomplete--substring-match {
         )
         self._results = results
         self._matches: list[DropdownItem] = []
-        self.track_cursor = track_cursor
 
     def compose(self) -> ComposeResult:
         yield AutoCompleteChild(
             self.input_widget,
             self._results,
-            self.track_cursor,
         )
 
     def on_mount(self, event: events.Mount) -> None:
@@ -193,7 +196,6 @@ AutoCompleteChild {
         linked_input: Input | str,
         items: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
         # TODO: Support awaitable and add debounce.
-        track_cursor: bool = True,
     ):
         """Construct an Autocomplete. Autocomplete only works if your Screen has a dedicated layer
         called `textual-autocomplete`.
@@ -204,14 +206,12 @@ AutoCompleteChild {
             items: Function to call to retrieve the list of completion results for the current input value.
                 Function takes the current input value and cursor position as arguments, and returns a list of
                 `AutoCompleteOption` which will be displayed as a dropdown list.
-            track_cursor: If True, the autocomplete dropdown will follow the cursor position.
         """
         super().__init__()
         self.items = items
         self._matches: list[DropdownItem] = []
         self._input_widget: Input | None = None
         self.linked_input = linked_input
-        self.track_cursor = track_cursor
 
         # Rich style information - these are actually component classes
         # on the parent wrapper container to make things more convenient.
@@ -234,11 +234,13 @@ AutoCompleteChild {
             attribute_name="value",
             callback=self._input_value_changed,
         )
-        watch(
-            self._input_widget,
-            attribute_name="cursor_position",
-            callback=self._input_cursor_position_changed,
-        )
+
+        # TODO - this watcher wasn't firing, potential Textual issue.
+        # watch(
+        #     self._input_widget,
+        #     attribute_name="cursor_position",
+        #     callback=self._input_cursor_position_changed,
+        # )
 
         self._sync_state(self._input_widget.value, self._input_widget.cursor_position)
 
@@ -252,7 +254,6 @@ AutoCompleteChild {
             "main-column": parent_component("autocomplete--main-column"),
             "right-column": parent_component("autocomplete--right-column"),
         }
-        print(component_styles)
         return DropdownRender(
             filter=self._input_widget.value,
             matches=self._matches,
@@ -262,16 +263,13 @@ AutoCompleteChild {
 
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
         assert self._input_widget is not None, "input_widget set in on_mount"
-        print("cursor changed")
         self._sync_state(self._input_widget.value, cursor_position)
 
     def _input_value_changed(self, value: str) -> None:
         assert self._input_widget is not None, "input_widget set in on_mount"
-        print("value changed")
         self._sync_state(value, self._input_widget.cursor_position)
 
     def _sync_state(self, value: str, cursor_position: int) -> None:
-        print("syncing state!!")
         if callable(self.items):
             self._matches = self.items(value, cursor_position)
         else:

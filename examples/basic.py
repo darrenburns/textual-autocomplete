@@ -50,7 +50,7 @@ DATA = [
 ]
 
 ITEMS = [
-    DropdownItem(Text(str(rank)), Text(city), Text(population))
+    DropdownItem(str(rank), city, population)
     for rank, (city, population) in enumerate(DATA, start=2)
 ]
 
@@ -65,7 +65,7 @@ def get_items(value: str, cursor_position: int) -> list[DropdownItem]:
         items.append(
             DropdownItem(
                 Text(str(rank), style="#a1a1a1"),
-                Text(city),
+                city,
                 Text(population, style=Style.from_color(color)),
             )
         )
@@ -83,8 +83,8 @@ class CompletionExample(App):
             AutoComplete(
                 Input(id="search-box", placeholder="Search for a UK city..."),
                 Dropdown(
-                    results=ITEMS,  # Using a list
-                    # results=get_items,  # Using a callback to dynamically generate items
+                    # results=ITEMS,  # Using a list
+                    results=get_items,  # Using a callback to dynamically generate items
                     id="my-dropdown",
                 ),
             ),
