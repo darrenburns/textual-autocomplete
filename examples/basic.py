@@ -9,7 +9,7 @@ from textual.containers import Container
 from textual.renderables._blend_colors import blend_colors
 from textual.widgets import Input, Footer, Label
 
-from textual_autocomplete._autocomplete import AutoComplete, Candidate, Dropdown
+from textual_autocomplete._autocomplete import AutoComplete, DropdownItem, Dropdown
 
 INFO_TEXT = """\
 Cities are ranked by population.
@@ -49,21 +49,26 @@ DATA = [
     ("Bournemouth", "198,727"),
 ]
 
+ITEMS = [
+    DropdownItem(Text(str(rank)), Text(city), Text(population))
+    for rank, (city, population) in enumerate(DATA, start=2)
+]
 
-def get_results(value: str, cursor_position: int) -> list[Candidate]:
+
+def get_items(value: str, cursor_position: int) -> list[DropdownItem]:
     maximum_population = int(DATA[0][1].replace(",", ""))
 
-    candidates = []
+    items = []
     for rank, (city, population) in enumerate(DATA, start=2):
         ratio = float(population.replace(",", "")) / maximum_population
         color = blend_colors(Color.parse("#e86c4a"), Color.parse("#4ed43f"), ratio)
-        candidates.append(
-            Candidate(
+        items.append(
+            DropdownItem(
                 Text(str(rank), style="#a1a1a1"), Text(city),
                 Text(population, style=Style.from_color(color))
             )
         )
-    return [c for c in candidates if value.lower() in c.main.plain.lower()]
+    return [c for c in items if value.lower() in c.main.plain.lower()]
 
 
 class CompletionExample(App):
@@ -79,7 +84,8 @@ class CompletionExample(App):
             AutoComplete(
                 Input(id="search-box", placeholder="Search for a UK city..."),
                 Dropdown(
-                    results=get_results,
+                    results=ITEMS,
+                    # results=get_items,
                     id="my-dropdown",
                 ),
             ),

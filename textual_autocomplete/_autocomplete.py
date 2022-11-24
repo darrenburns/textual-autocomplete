@@ -22,7 +22,7 @@ class DropdownRender:
     def __init__(
         self,
         filter: str,
-        matches: Iterable[Candidate],
+        matches: Iterable[DropdownItem],
         highlight_index: int,
         component_styles: Mapping[str, Style],
     ) -> None:
@@ -57,7 +57,7 @@ class DropdownRender:
 
 
 @dataclass
-class Candidate:
+class DropdownItem:
     """A single option appearing in the autocompletion dropdown. Each option has up to 3 columns.
     Note that this is not a widget, it's simply a data structure for describing dropdown items.
 
@@ -143,7 +143,7 @@ Dropdown .autocomplete--substring-match {
 
     def __init__(
         self,
-        results: Callable[[str, int], list[Candidate]],
+        results: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
         track_cursor: bool = True,
         id: str | None = None,
         classes: str | None = None,
@@ -152,11 +152,10 @@ Dropdown .autocomplete--substring-match {
         called `textual-autocomplete`.
 
         Args:
-            linked_input: A reference to the Input Widget to add autocomplete to, or a selector/query string
-                identifying the Input Widget that should power this autocomplete.
-            results: Function to call to retrieve the list of completion results for the current input value.
+            results: A list of dropdown items, or a function to call to retrieve the list
+                of dropdown items for the current input value and cursor position.
                 Function takes the current input value and cursor position as arguments, and returns a list of
-                `AutoCompleteOption` which will be displayed as a dropdown list.
+                `DropdownItem` which will be displayed in the dropdown list.
             track_cursor: If True, the autocomplete dropdown will follow the cursor position.
             id: The ID of the widget, allowing you to directly refer to it using CSS and queries.
             classes: The classes of this widget, a space separated string.
@@ -166,7 +165,7 @@ Dropdown .autocomplete--substring-match {
             classes=classes,
         )
         self._results = results
-        self._matches: list[Candidate] = []
+        self._matches: list[DropdownItem] = []
         self.track_cursor = track_cursor
 
     def compose(self) -> ComposeResult:
@@ -183,6 +182,13 @@ Dropdown .autocomplete--substring-match {
         self.screen.styles.layers = tuple(screen_layers)
 
 
+# def _default_get_items(
+#     dropdown_items: list[DropdownItem],
+#     value: str,
+#     cursor_position: int,
+# ) ->:
+#     pass
+
 
 class AutoCompleteChild(Widget):
     """An autocompletion dropdown widget. This widget gets linked to an Input widget, and is automatically
@@ -197,7 +203,7 @@ AutoCompleteChild {
     def __init__(
         self,
         linked_input: Input | str,
-        get_results: Callable[[str, int], list[Candidate]],
+        items: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
         # TODO: Support awaitable and add debounce.
         track_cursor: bool = True,
     ):
@@ -207,14 +213,14 @@ AutoCompleteChild {
         Args:
             linked_input: A reference to the Input Widget to add autocomplete to, or a selector/query string
                 identifying the Input Widget that should power this autocomplete.
-            get_results: Function to call to retrieve the list of completion results for the current input value.
+            items: Function to call to retrieve the list of completion results for the current input value.
                 Function takes the current input value and cursor position as arguments, and returns a list of
                 `AutoCompleteOption` which will be displayed as a dropdown list.
             track_cursor: If True, the autocomplete dropdown will follow the cursor position.
         """
         super().__init__()
-        self._get_results = get_results
-        self._matches: list[Candidate] = []
+        self.items = items
+        self._matches: list[DropdownItem] = []
         self._input_widget: Input | None = None
         self.linked_input = linked_input
         self.track_cursor = track_cursor
@@ -273,7 +279,17 @@ AutoCompleteChild {
 
     def _sync_state(self, value: str, cursor_position: int) -> None:
         print("syncing state!!")
-        self._matches = self._get_results(value, cursor_position)
+        if callable(self.items):
+            self._matches = self.items(value, cursor_position)
+        else:
+            self._matches = [
+                DropdownItem(
+                    left_meta=item.left_meta.copy(),
+                    main=item.main.copy(),
+                    right_meta=item.right_meta.copy(),
+                )
+                for item in self.items if value.lower() in item.main.plain.lower()
+            ]
         self.parent.display = len(self._matches) > 0 and value != ""
 
         top, right, bottom, left = self.parent.styles.margin
