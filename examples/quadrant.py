@@ -11,7 +11,7 @@ class Quadrant(App):
         auto_completes = [
             AutoComplete(
                 Input(classes="search-box", placeholder="Search for a UK city..."),
-                Dropdown(results=ITEMS, classes=f"dropdown", id=f"dropdown-{i}"),
+                Dropdown(items=ITEMS, classes=f"dropdown", id=f"dropdown-{i}"),
             )
             for i in range(1, 4)
         ]

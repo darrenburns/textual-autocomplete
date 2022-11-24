@@ -9,6 +9,7 @@ from rich.table import Table
 from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
+from textual.geometry import Size
 from textual.reactive import watch
 from textual.widget import Widget
 from textual.widgets import Input
@@ -143,9 +144,9 @@ Dropdown {
     display: none;
     overflow: hidden auto;
     background: $panel-lighten-1;
+    width: auto;
     height: auto;
     max-height: 12;
-    width: auto;
     max-width: 1fr;
     scrollbar-size-vertical: 1;
 }
@@ -170,7 +171,9 @@ Dropdown .autocomplete--selection-cursor {
 
     def __init__(
         self,
-        results: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
+        items: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
+        edge: str = "bottom",  # Literal["top", "bottom"]
+        tracking: str = "follow_cursor",  # Literal["follow_cursor", "static"]
         id: str | None = None,
         classes: str | None = None,
     ):
@@ -178,10 +181,12 @@ Dropdown .autocomplete--selection-cursor {
         called `textual-autocomplete`.
 
         Args:
-            results: A list of dropdown items, or a function to call to retrieve the list
+            items: A list of dropdown items, or a function to call to retrieve the list
                 of dropdown items for the current input value and cursor position.
                 Function takes the current input value and cursor position as arguments, and returns a list of
                 `DropdownItem` which will be displayed in the dropdown list.
+            edge: Whether the dropdown should appear above or below.
+            tracking: Whether the dropdown should follow the cursor or remain static.
             id: The ID of the widget, allowing you to directly refer to it using CSS and queries.
             classes: The classes of this widget, a space separated string.
         """
@@ -189,15 +194,14 @@ Dropdown .autocomplete--selection-cursor {
             id=id,
             classes=classes,
         )
-        self._results = results
-        self._matches: list[DropdownItem] = []
+        self._items = items
+        self._edge = edge
+        self._tracking = tracking
         self._selected_index: int | None = None
 
     def compose(self) -> ComposeResult:
-        yield AutoCompleteChild(
-            self.input_widget,
-            self._results,
-        )
+        self.child = DropdownChild(self.input_widget)
+        yield self.child
 
     def on_mount(self, event: events.Mount) -> None:
         screen_layers = list(self.screen.styles.layers)
@@ -205,45 +209,13 @@ Dropdown .autocomplete--selection-cursor {
             screen_layers.append("textual-autocomplete")
         self.screen.styles.layers = tuple(screen_layers)
 
-
-class AutoCompleteChild(Widget):
-    """An autocompletion dropdown widget. This widget gets linked to an Input widget, and is automatically
-    updated based on the state of that Input."""
-
-    DEFAULT_CSS = """\
-AutoCompleteChild {
-    height: auto;
-}
-    """
-
-    def __init__(
-        self,
-        linked_input: Input,
-        items: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
-        # TODO: Support awaitable and add debounce.
-    ):
-        """Construct an Autocomplete. Autocomplete only works if your Screen has a dedicated layer
-        called `textual-autocomplete`.
-
-        Args:
-            linked_input: A reference to the Input Widget to add autocomplete to, or a selector/query string
-                identifying the Input Widget that should power this autocomplete.
-            items: Function to call to retrieve the list of completion results for the current input value.
-                Function takes the current input value and cursor position as arguments, and returns a list of
-                `AutoCompleteOption` which will be displayed as a dropdown list.
-        """
-        super().__init__()
-        self.items = items
-        self._matches: list[DropdownItem] = []
-        self.linked_input = linked_input
-
-    def on_mount(self, event: events.Mount) -> None:
         # Configure the watch methods - we want to subscribe to a couple of the
         # reactives inside the Input so that we can react accordingly.
         # TODO: Error cases - Handle case where reference to input widget no
         #  longer exists, for example
+
         watch(
-            self.linked_input,
+            self.input_widget,
             attribute_name="value",
             callback=self._input_value_changed,
         )
@@ -255,7 +227,73 @@ AutoCompleteChild {
         #     callback=self._input_cursor_position_changed,
         # )
 
-        self._sync_state(self.linked_input.value, self.linked_input.cursor_position)
+        self._sync_state(self.input_widget.value, self.input_widget.cursor_position)
+
+    def _input_cursor_position_changed(self, cursor_position: int) -> None:
+        assert self.input_widget is not None, "input_widget set in on_mount"
+        self._sync_state(self.input_widget.value, cursor_position)
+
+    def _input_value_changed(self, value: str) -> None:
+        assert self.input_widget is not None, "input_widget set in on_mount"
+        self._sync_state(value, self.input_widget.cursor_position)
+
+    def _sync_state(self, value: str, cursor_position: int) -> None:
+        if callable(self._items):
+            matches = self._items(value, cursor_position)
+        else:
+            matches = [
+                DropdownItem(
+                    left_meta=item.left_meta.copy(),
+                    main=item.main.copy(),
+                    right_meta=item.right_meta.copy(),
+                )
+                for item in self._items
+                if value.lower() in item.main.plain.lower()
+            ]
+
+        self.child.matches = matches
+        self.display = len(matches) > 0 and value != ""
+
+        top, right, bottom, left = self.styles.margin
+        x, y, width, height = self.input_widget.content_region
+        line_below_cursor = y + 1
+
+        cursor_screen_position = x + (cursor_position - self.input_widget.view_position)
+        self.styles.margin = (
+            line_below_cursor,
+            right,
+            bottom,
+            cursor_screen_position,
+        )
+
+        self.child.refresh(layout=True)
+
+
+class DropdownChild(Widget):
+    """An autocompletion dropdown widget. This widget gets linked to an Input widget, and is automatically
+    updated based on the state of that Input."""
+
+    DEFAULT_CSS = """\
+DropdownChild {
+    height: auto;
+}
+    """
+
+    def __init__(
+        self,
+        linked_input: Input,
+        # TODO: Support awaitable and add debounce.
+    ):
+        """Construct an Autocomplete. Autocomplete only works if your Screen has a dedicated layer
+        called `textual-autocomplete`.
+
+        Args:
+            linked_input: A reference to the Input Widget to add autocomplete to, or a selector/query string
+                identifying the Input Widget that should power this autocomplete.
+        """
+        super().__init__()
+        self.matches: list[DropdownItem] = []
+        self.linked_input = linked_input
 
     def render(self) -> RenderableType:
         assert self.linked_input is not None, "input_widget set in on_mount"
@@ -269,10 +307,13 @@ AutoCompleteChild {
         }
         return DropdownRender(
             filter=self.linked_input.value,
-            matches=self._matches,
+            matches=self.matches,
             selected_index=0,
             component_styles=component_styles,
         )
+
+    def get_content_height(self, container: Size, viewport: Size, width: int) -> int:
+        return len(self.matches)
 
     @property
     def selected_index(self) -> int | None:
@@ -282,41 +323,4 @@ AutoCompleteChild {
     def selected_index(self, value: int | None) -> None:
         if value is None:
             self._selected_index = None
-        self._selected_index = value % len(self._matches)
-
-    def _input_cursor_position_changed(self, cursor_position: int) -> None:
-        assert self.linked_input is not None, "input_widget set in on_mount"
-        self._sync_state(self.linked_input.value, cursor_position)
-
-    def _input_value_changed(self, value: str) -> None:
-        assert self.linked_input is not None, "input_widget set in on_mount"
-        self._sync_state(value, self.linked_input.cursor_position)
-
-    def _sync_state(self, value: str, cursor_position: int) -> None:
-        if callable(self.items):
-            self._matches = self.items(value, cursor_position)
-        else:
-            self._matches = [
-                DropdownItem(
-                    left_meta=item.left_meta.copy(),
-                    main=item.main.copy(),
-                    right_meta=item.right_meta.copy(),
-                )
-                for item in self.items
-                if value.lower() in item.main.plain.lower()
-            ]
-        self.parent.display = len(self._matches) > 0 and value != ""
-
-        top, right, bottom, left = self.parent.styles.margin
-        x, y, width, height = self.linked_input.content_region
-        line_below_cursor = y + 1
-
-        cursor_screen_position = x + (cursor_position - self.linked_input.view_position)
-        self.parent.styles.margin = (
-            line_below_cursor,
-            right,
-            bottom,
-            cursor_screen_position,
-        )
-
-        self.refresh()
+        self._selected_index = value % len(self.matches)

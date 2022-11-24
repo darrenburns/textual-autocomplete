@@ -84,7 +84,7 @@ class CompletionExample(App):
                 Input(id="search-box", placeholder="Search for a UK city..."),
                 Dropdown(
                     # results=ITEMS,  # Using a list
-                    results=get_items,  # Using a callback to dynamically generate items
+                    items=get_items,  # Using a callback to dynamically generate items
                     id="my-dropdown",
                 ),
             ),
