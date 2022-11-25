@@ -9,7 +9,6 @@ from rich.table import Table
 from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
-from textual.dom import DOMNode
 from textual.geometry import Size, Region
 from textual.reactive import watch
 from textual.widget import Widget
@@ -134,7 +133,6 @@ AutoComplete {
         self.screen.mount(self.dropdown)
 
     def on_key(self, event: events.Key) -> None:
-        print(f"KEY === {event.key}")
         key = event.key
         if key == "down":
             self.dropdown.cursor_down()
