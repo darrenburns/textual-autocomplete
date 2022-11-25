@@ -1,19 +1,20 @@
 #grid {
+    margin-top: 4;
     layout: grid;
     grid-size: 2 3;
 }
 
-AutoComplete {
+Grid > Container {
     padding: 2 4;
 }
 
 .dropdown {
     max-width: 36;
+    max-height: 4;
 }
 
 #dropdown-2 {
     background: $accent;
-    scrollbar-size-vertical: 2;
     scrollbar-color: $secondary;
 }
 
@@ -45,4 +46,27 @@ AutoComplete {
 
 #dropdown-3 .autocomplete--selection-cursor {
     background: $success 20%;
+
+}
+
+#dropdown-4 {
+    scrollbar-color: deeppink;
+}
+
+#dropdown-4 .autocomplete--highlight-match {
+    color: $text;
+    background: deeppink 60%;
+    text-style: not bold italic underline;
+}
+
+#dropdown-4 .autocomplete--selection-cursor {
+    background: deeppink 20%;
+}
+
+#input-4  {
+    border: tall deeppink;
+}
+
+#input-4>.input--cursor {
+    color: deeppink;
 }

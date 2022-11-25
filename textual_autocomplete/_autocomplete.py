@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Callable, ClassVar, Mapping
+from typing import Iterable, Callable, ClassVar, Mapping, cast
 
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.style import Style
@@ -9,6 +9,7 @@ from rich.table import Table
 from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
+from textual.dom import DOMNode
 from textual.geometry import Size, Region
 from textual.reactive import watch
 from textual.widget import Widget
@@ -39,7 +40,7 @@ class DropdownRender:
 
         add_row = table.add_row
         for index, match in enumerate(self.matches):
-            main_text = match.main
+            main_text = cast(Text, match.main)
             if self.filter != "":
                 highlight_style = self.component_styles["highlight-match"]
                 if match.highlight_ranges is not None:
@@ -55,7 +56,7 @@ class DropdownRender:
                     )
 
             # If the cursor is on this row, highlight it
-            additional_row_style = ""
+            additional_row_style = Style.null()
             if index == self.selection_cursor_index:
                 additional_row_style = self.component_styles["selection-cursor"]
 
@@ -123,12 +124,13 @@ AutoComplete {
         super().__init__(id=id, classes=classes)
         self.input = input
         self.dropdown = dropdown
+        self.dropdown.input_widget = self.input
 
     def compose(self) -> ComposeResult:
         yield self.input
 
     def on_mount(self, event: events.Mount) -> None:
-        self.dropdown.input_widget = self.input
+        # Very important that we link the input widget to the dropdown before mounting.
         self.screen.mount(self.dropdown)
 
     def on_key(self, event: events.Key) -> None:
@@ -138,6 +140,8 @@ AutoComplete {
             self.dropdown.cursor_down()
         elif key == "up":
             self.dropdown.cursor_up()
+        elif key == "escape":
+            self.dropdown.close()
 
 
 class Dropdown(Widget):
@@ -202,7 +206,7 @@ Dropdown .autocomplete--selection-cursor {
         self._items = items
         self._edge = edge
         self._tracking = tracking
-        self.input_widget: Input | None = None
+        self.input_widget: Input
 
     def compose(self) -> ComposeResult:
         self.child = DropdownChild(self.input_widget)
@@ -212,7 +216,10 @@ Dropdown .autocomplete--selection-cursor {
         screen_layers = list(self.screen.styles.layers)
         if not "textual-autocomplete" in screen_layers:
             screen_layers.append("textual-autocomplete")
-        self.screen.styles.layers = tuple(screen_layers)
+
+        # TODO: Ignoring type below because Textual is typed incorrectly here.
+        #  Style property setter for layers has incorrect type.
+        self.screen.styles.layers = tuple(screen_layers)  # type: ignore
 
         # Configure the watch methods - we want to subscribe to a couple of the
         # reactives inside the Input so that we can react accordingly.
@@ -240,37 +247,50 @@ Dropdown .autocomplete--selection-cursor {
             callback=self.handle_screen_scroll,
         )
 
-        self.sync_state(self.input_widget.value, self.input_widget.cursor_position)
+        if self.input_widget is not None:
+            self.sync_state(self.input_widget.value, self.input_widget.cursor_position)
 
-    def cursor_up(self):
-        self.child.selected_index -= 1
+    def cursor_up(self) -> None:
+        if not self.display:
+            self.display = True
+        else:
+            self.child.selected_index -= 1
 
-    def cursor_down(self):
-        self.child.selected_index += 1
+    def cursor_down(self) -> None:
+        if not self.display:
+            self.display = True
+        else:
+            self.child.selected_index += 1
 
-    def cursor_home(self):
+    def cursor_home(self) -> None:
         self.child.selected_index = 0
 
+    def close(self) -> None:
+        if self.display:
+            self.display = False
+
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
-        assert self.input_widget is not None, "input_widget set in on_mount"
-        self.sync_state(self.input_widget.value, cursor_position)
+        if self.input_widget is not None:
+            self.sync_state(self.input_widget.value, cursor_position)
 
     def _input_value_changed(self, value: str) -> None:
-        assert self.input_widget is not None, "input_widget set in on_mount"
-        self.sync_state(value, self.input_widget.cursor_position)
+        if self.input_widget is not None:
+            self.sync_state(value, self.input_widget.cursor_position)
 
     def sync_state(self, value: str, input_cursor_position: int) -> None:
         if callable(self._items):
             matches = self._items(value, input_cursor_position)
         else:
             matches = [
+                # Casting to Text, since we convert to Text object in
+                # the __post_init__ of DropdownItem.
                 DropdownItem(
-                    left_meta=item.left_meta.copy(),
-                    main=item.main.copy(),
-                    right_meta=item.right_meta.copy(),
+                    left_meta=cast(Text, item.left_meta).copy(),
+                    main=cast(Text, item.main).copy(),
+                    right_meta=cast(Text, item.right_meta).copy(),
                 )
                 for item in self._items
-                if value.lower() in item.main.plain.lower()
+                if value.lower() in cast(Text, item.main).plain.lower()
             ]
 
         self.child.matches = matches
@@ -287,6 +307,9 @@ Dropdown .autocomplete--selection-cursor {
         input_cursor_position: int | None = None,
         scroll_target_adjust_y: int = 0,
     ) -> None:
+        if self.input_widget is None:
+            return
+
         if input_cursor_position is None:
             input_cursor_position = self.input_widget.cursor_position
 
@@ -295,7 +318,7 @@ Dropdown .autocomplete--selection-cursor {
         line_below_cursor = y + 1 + scroll_target_adjust_y
 
         cursor_screen_position = x + (
-                input_cursor_position - self.input_widget.view_position)
+            input_cursor_position - self.input_widget.view_position)
         self.styles.margin = (
             line_below_cursor,
             right,
@@ -328,6 +351,11 @@ DropdownChild {
         self.linked_input = linked_input
         self._selected_index: int = 0
 
+    @property
+    def parent(self) -> Dropdown:
+        assert isinstance(self._parent, Dropdown)
+        return self._parent
+
     def render(self) -> RenderableType:
         assert self.linked_input is not None, "input_widget set in on_mount"
         parent_component = self.parent.get_component_rich_style
@@ -358,7 +386,11 @@ DropdownChild {
         # It's easier to just ask our parent to scroll here rather
         # than having to make sure we do it in the parent each time we
         # update the index. We always appear under the same parent anyway.
-        self.parent.scroll_to_region(Region(x=self.virtual_region.x,
-                                            y=self.virtual_region.y + self._selected_index,
-                                            height=1, width=1))
+        region = Region(
+            x=self.virtual_region.x,
+            y=self.virtual_region.y + self._selected_index,
+            height=1,
+            width=1,
+        )
+        self.parent.scroll_to_region(region=region)
         self.refresh()
