@@ -81,7 +81,7 @@ class DropdownItem:
             In an IDE, the `main` (middle) column might contain the name of a function or method.
         right: The text appearing in the right column of the dropdown.
             The right column often contains some metadata relating to this option.
-        highlight_ranges: Custom ranges to highlight. By default the value is None,
+        highlight_ranges: Custom ranges to highlight. By default, the value is None,
             meaning textual-autocomplete will highlight substrings in the dropdown.
             That is, if the value you've typed into the Input is a substring of the candidates
             `main` attribute, then that substring will be highlighted. If you supply your own
@@ -132,6 +132,9 @@ AutoComplete {
         # Very important that we link the input widget to the dropdown before mounting.
         self.screen.mount(self.dropdown)
 
+    def on_descendant_blur(self, event: events.DescendantBlur) -> None:
+        self.dropdown.display = False
+
     def on_key(self, event: events.Key) -> None:
         key = event.key
         if key == "down":
@@ -179,8 +182,10 @@ Dropdown .autocomplete--selection-cursor {
     def __init__(
         self,
         items: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
-        edge: str = "bottom",  # Literal["top", "bottom"]
-        tracking: str = "follow_cursor",  # Literal["follow_cursor", "static"]
+        # edge: Whether the dropdown should appear above or below.
+        # edge: str = "bottom",  # Literal["top", "bottom"]
+        # tracking: Whether the dropdown should follow the cursor or remain static.
+        # tracking: str = "follow_cursor",  # Literal["follow_cursor", "static"]
         id: str | None = None,
         classes: str | None = None,
     ):
@@ -192,8 +197,6 @@ Dropdown .autocomplete--selection-cursor {
                 of dropdown items for the current input value and cursor position.
                 Function takes the current input value and cursor position as arguments, and returns a list of
                 `DropdownItem` which will be displayed in the dropdown list.
-            edge: Whether the dropdown should appear above or below.
-            tracking: Whether the dropdown should follow the cursor or remain static.
             id: The ID of the widget, allowing you to directly refer to it using CSS and queries.
             classes: The classes of this widget, a space separated string.
         """
@@ -202,9 +205,10 @@ Dropdown .autocomplete--selection-cursor {
             classes=classes,
         )
         self._items = items
-        self._edge = edge
-        self._tracking = tracking
+        # self._edge = edge
+        # self._tracking = tracking
         self.input_widget: Input
+
 
     def compose(self) -> ComposeResult:
         self.child = DropdownChild(self.input_widget)
@@ -219,8 +223,6 @@ Dropdown .autocomplete--selection-cursor {
         #  Style property setter for layers has incorrect type.
         self.screen.styles.layers = tuple(screen_layers)  # type: ignore
 
-        # Configure the watch methods - we want to subscribe to a couple of the
-        # reactives inside the Input so that we can react accordingly.
         # TODO: Error cases - Handle case where reference to input widget no
         #  longer exists, for example
 
