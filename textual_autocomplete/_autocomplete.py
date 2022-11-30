@@ -8,8 +8,10 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text, TextType
 from textual import events
+from textual._types import MessageTarget
 from textual.app import ComposeResult
 from textual.geometry import Size, Region
+from textual.message import Message
 from textual.reactive import watch
 from textual.widget import Widget
 from textual.widgets import Input
@@ -117,6 +119,8 @@ AutoComplete {
         self,
         input: Input,
         dropdown: Dropdown,
+        *,
+        items: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
         id: str | None = None,
         classes: str | None = None,
     ):
@@ -124,12 +128,12 @@ AutoComplete {
         self.input = input
         self.dropdown = dropdown
         self.dropdown.input_widget = self.input
+        self.dropdown.items = items
 
     def compose(self) -> ComposeResult:
         yield self.input
 
     def on_mount(self, event: events.Mount) -> None:
-        # Very important that we link the input widget to the dropdown before mounting.
         self.screen.mount(self.dropdown)
 
     def on_descendant_blur(self, event: events.DescendantBlur) -> None:
@@ -143,6 +147,14 @@ AutoComplete {
             self.dropdown.cursor_up()
         elif key == "escape":
             self.dropdown.close()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        self.emit_no_wait(self.Selected(self, item=self.dropdown.))
+
+    class Selected(Message):
+        def __init__(self, sender: MessageTarget, item: DropdownItem):
+            super().__init__(sender)
+            self.item = item
 
 
 class Dropdown(Widget):
@@ -181,7 +193,6 @@ Dropdown .autocomplete--selection-cursor {
 
     def __init__(
         self,
-        items: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
         # edge: Whether the dropdown should appear above or below.
         # edge: str = "bottom",  # Literal["top", "bottom"]
         # tracking: Whether the dropdown should follow the cursor or remain static.
@@ -204,11 +215,9 @@ Dropdown .autocomplete--selection-cursor {
             id=id,
             classes=classes,
         )
-        self._items = items
         # self._edge = edge
         # self._tracking = tracking
         self.input_widget: Input
-
 
     def compose(self) -> ComposeResult:
         self.child = DropdownChild(self.input_widget)
@@ -269,6 +278,10 @@ Dropdown .autocomplete--selection-cursor {
         if self.display:
             self.display = False
 
+    @property
+    def selected(self) -> DropdownItem:
+        return self.child.matches[self.child.selected_index]
+
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
         if self.input_widget is not None:
             self.sync_state(self.input_widget.value, cursor_position)
@@ -278,8 +291,8 @@ Dropdown .autocomplete--selection-cursor {
             self.sync_state(value, self.input_widget.cursor_position)
 
     def sync_state(self, value: str, input_cursor_position: int) -> None:
-        if callable(self._items):
-            matches = self._items(value, input_cursor_position)
+        if callable(self.items):
+            matches = self.items(value, input_cursor_position)
         else:
             matches = [
                 # Casting to Text, since we convert to Text object in
@@ -289,7 +302,7 @@ Dropdown .autocomplete--selection-cursor {
                     main=cast(Text, item.main).copy(),
                     right_meta=cast(Text, item.right_meta).copy(),
                 )
-                for item in self._items
+                for item in self.items
                 if value.lower() in cast(Text, item.main).plain.lower()
             ]
 
@@ -377,6 +390,10 @@ DropdownChild {
         return len(self.matches)
 
     @property
+    def selected_item(self) -> DropdownItem:
+        return self.matches[self._selected_index]
+
+    @property
     def selected_index(self) -> int:
         return self._selected_index
 
@@ -392,5 +409,5 @@ DropdownChild {
             height=1,
             width=1,
         )
-        self.parent.scroll_to_region(region=region)
+        self.parent.scroll_to_region(region=region, animate=False)
         self.refresh()

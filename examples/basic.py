@@ -17,7 +17,7 @@ The left column shows the rank of the city.
 The right column of the dropdown is coloured based on that population."""
 
 DATA = [
-    # ("London", "8,907,918"),
+    # ("London", "8,907,918"),  # Sorry London, u broke my naive colour-highlighting system
     ("Birmingham", "1,153,717"),
     ("Glasgow", "612,040"),
     ("Liverpool", "579,256"),
@@ -82,11 +82,8 @@ class CompletionExample(App):
             Label("Textual Autocomplete", id="lead-text"),
             AutoComplete(
                 Input(id="search-box", placeholder="Search for a UK city..."),
-                Dropdown(
-                    # results=ITEMS,  # Using a list
-                    items=get_items,  # Using a callback to dynamically generate items
-                    id="my-dropdown",
-                ),
+                Dropdown(id="my-dropdown"),
+                items=get_items,  # Using a callback to dynamically generate items
             ),
             Label(INFO_TEXT, id="info-text"),
             id="search-container",

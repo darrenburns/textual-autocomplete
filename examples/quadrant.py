@@ -1,4 +1,3 @@
-from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.widgets import Input, Footer
@@ -12,7 +11,8 @@ class Quadrant(App):
         auto_completes = [
             AutoComplete(
                 Input(classes="search-box", placeholder="Search for a UK city...", id=f"input-{i}"),
-                Dropdown(items=ITEMS, classes=f"dropdown", id=f"dropdown-{i}"),
+                Dropdown(classes=f"dropdown", id=f"dropdown-{i}"),
+                items=ITEMS,
             )
             for i in range(1, 4)
         ]
@@ -21,10 +21,10 @@ class Quadrant(App):
             AutoComplete(
                 Input(placeholder="Search for a UK city...", id="input-4"),
                 Dropdown(
-                    items=get_items,  # Using a callback to dynamically generate items
                     classes="dropdown",
                     id="dropdown-4",
                 ),
+                items=get_items,  # Using a callback to dynamically generate items
             ),
             id="grid",
         )
