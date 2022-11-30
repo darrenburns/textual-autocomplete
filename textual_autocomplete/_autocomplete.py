@@ -149,7 +149,12 @@ AutoComplete {
             self.dropdown.close()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        self.emit_no_wait(self.Selected(self, item=self.dropdown.))
+        selected = self.dropdown.selected_item
+        if self.dropdown.display and selected is not None:
+            self.input.value = ""
+            self.input.insert_text_at_cursor(selected.main.plain)
+            self.dropdown.display = False
+            self.emit_no_wait(self.Selected(self, item=self.dropdown.selected_item))
 
     class Selected(Message):
         def __init__(self, sender: MessageTarget, item: DropdownItem):
@@ -279,8 +284,8 @@ Dropdown .autocomplete--selection-cursor {
             self.display = False
 
     @property
-    def selected(self) -> DropdownItem:
-        return self.child.matches[self.child.selected_index]
+    def selected_item(self) -> DropdownItem | None:
+        return self.child.selected_item
 
     def _input_cursor_position_changed(self, cursor_position: int) -> None:
         if self.input_widget is not None:
@@ -390,8 +395,11 @@ DropdownChild {
         return len(self.matches)
 
     @property
-    def selected_item(self) -> DropdownItem:
-        return self.matches[self._selected_index]
+    def selected_item(self) -> DropdownItem | None:
+        selected_index = self._selected_index
+        if not self.matches or not 0 <= selected_index < len(self.matches):
+            return None
+        return self.matches[selected_index]
 
     @property
     def selected_index(self) -> int:
