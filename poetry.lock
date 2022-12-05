@@ -364,24 +364,19 @@ version = "0.5.0"
 description = "Modern Text User Interface framework"
 category = "main"
 optional = false
-python-versions = "^3.7"
-develop = true
+python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
 aiohttp = {version = ">=3.8.1", optional = true, markers = "extra == \"dev\""}
 click = {version = ">=8.1.2", optional = true, markers = "extra == \"dev\""}
-importlib-metadata = "^4.11.3"
+importlib-metadata = ">=4.11.3,<5.0.0"
 msgpack = {version = ">=1.0.3", optional = true, markers = "extra == \"dev\""}
 nanoid = ">=2.0.0"
-rich = "^12.6.0"
-typing-extensions = {version = "^4.0.0", markers = "python_version < \"3.10\""}
+rich = ">=12.6.0,<13.0.0"
+typing-extensions = {version = ">=4.0.0,<5.0.0", markers = "python_version < \"3.10\""}
 
 [package.extras]
 dev = ["aiohttp (>=3.8.1)", "click (>=8.1.2)", "msgpack (>=1.0.3)"]
-
-[package.source]
-type = "directory"
-url = "../textual"
 
 [[package]]
 name = "tomli"
@@ -440,7 +435,7 @@ typing-extensions = {version = ">=3.7.4", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "zipp"
-version = "3.10.0"
+version = "3.11.0"
 description = "Backport of pathlib-compatible object wrapper for zip files"
 category = "main"
 optional = false
@@ -453,7 +448,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.8"
-content-hash = "89a501091a0137ac772fc38a3fa457540f92f23cd06e8c57c413b47408254159"
+content-hash = "4492abdab786de97b0c95b381e1ca34208f9c8168217b50270838711a6c6d8d7"
 
 [metadata.files]
 aiohttp = [
@@ -926,7 +921,10 @@ six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
 ]
-textual = []
+textual = [
+    {file = "textual-0.5.0-py3-none-any.whl", hash = "sha256:d1925f9f019858beaabda8a87cb87fb57cbbf321e948fc3b28d7085e83c8f5ab"},
+    {file = "textual-0.5.0.tar.gz", hash = "sha256:516bf4db05830e70f9806828610a1a00de08068d984d329dbecc8dbef5d71ab7"},
+]
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
     {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
@@ -1027,6 +1025,6 @@ yarl = [
     {file = "yarl-1.8.1.tar.gz", hash = "sha256:af887845b8c2e060eb5605ff72b6f2dd2aab7a761379373fd89d314f4752abbf"},
 ]
 zipp = [
-    {file = "zipp-3.10.0-py3-none-any.whl", hash = "sha256:4fcb6f278987a6605757302a6e40e896257570d11c51628968ccb2a47e80c6c1"},
-    {file = "zipp-3.10.0.tar.gz", hash = "sha256:7a7262fd930bd3e36c50b9a64897aec3fafff3dfdeec9623ae22b40e93f99bb8"},
+    {file = "zipp-3.11.0-py3-none-any.whl", hash = "sha256:83a28fcb75844b5c0cdaf5aa4003c2d728c77e05f5aeabe8e95e56727005fbaa"},
+    {file = "zipp-3.11.0.tar.gz", hash = "sha256:a7a22e05929290a67401440b39690ae6563279bced5f314609d9d03798f56766"},
 ]

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Callable, ClassVar, Mapping, cast
+from typing import Callable
+from typing import Iterable, ClassVar, Mapping, cast
 
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.style import Style
@@ -21,7 +22,7 @@ class DropdownRender:
     def __init__(
         self,
         filter: str,
-        matches: Iterable[DropdownItem],
+        matches: list[DropdownItem],
         selected_index: int,
         component_styles: Mapping[str, Style],
     ) -> None:
@@ -35,9 +36,16 @@ class DropdownRender:
     ) -> RenderResult:
         get_style = self.component_styles.get
         table = Table.grid(expand=True)
-        table.add_column("left_meta", justify="left", style=get_style("left-column"))
-        table.add_column("main", style=get_style("main-column"))
-        table.add_column("right_meta", justify="right", style=get_style("right-column"))
+
+        if self.matches:
+            if self.matches[0].left_meta:
+                table.add_column("left_meta", justify="left",
+                                 style=get_style("left-column"))
+            if self.matches[0].main:
+                table.add_column("main", style=get_style("main-column"))
+            if self.matches[0].right_meta:
+                table.add_column("right_meta", justify="right",
+                                 style=get_style("right-column"))
 
         add_row = table.add_row
         for index, match in enumerate(self.matches):
@@ -61,10 +69,16 @@ class DropdownRender:
             if index == self.selection_cursor_index:
                 additional_row_style = self.component_styles["selection-cursor"]
 
+            row_items = []
+            if match.left_meta:
+                row_items.append(match.left_meta)
+            if match.main:
+                row_items.append(match.main)
+            if match.right_meta:
+                row_items.append(match.right_meta)
+
             add_row(
-                match.left_meta,
-                match.main,
-                match.right_meta,
+                *row_items,
                 style=additional_row_style,
             )
 
@@ -87,14 +101,14 @@ class DropdownItem:
             meaning textual-autocomplete will highlight substrings in the dropdown.
             That is, if the value you've typed into the Input is a substring of the candidates
             `main` attribute, then that substring will be highlighted. If you supply your own
-            implementation of get_results which uses a more complex process to decide what to
+            implementation of `items` which uses a more complex process to decide what to
             display in the dropdown, then you can customise the highlighting of the returned
             candidates by supplying index ranges to highlight.
 
     """
 
-    left_meta: TextType = ""
     main: TextType = ""
+    left_meta: TextType = ""
     right_meta: TextType = ""
     highlight_ranges: Iterable[tuple[int, int]] | None = None
 
@@ -120,15 +134,21 @@ AutoComplete {
         input: Input,
         dropdown: Dropdown,
         *,
-        items: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
         id: str | None = None,
         classes: str | None = None,
     ):
+        """Coordinates between a Textual Input and a Dropdown widget,
+        ensuring the Dropdown is fed with data from the Input and displayed
+        in the correct location at the appropriate times.
+
+        Args:
+            input: The input widget that you want to power the dropdown.
+            dropdown: The dropdown widget. This will be populated by AutoComplete.
+        """
         super().__init__(id=id, classes=classes)
         self.input = input
         self.dropdown = dropdown
         self.dropdown.input_widget = self.input
-        self.dropdown.items = items
 
     def compose(self) -> ComposeResult:
         yield self.input
@@ -147,8 +167,13 @@ AutoComplete {
             self.dropdown.cursor_up()
         elif key == "escape":
             self.dropdown.close()
+        elif key == "tab":
+            self._select_item()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
+        self._select_item()
+
+    def _select_item(self):
         selected = self.dropdown.selected_item
         if self.dropdown.display and selected is not None:
             self.input.value = ""
@@ -198,6 +223,7 @@ Dropdown .autocomplete--selection-cursor {
 
     def __init__(
         self,
+        items: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
         # edge: Whether the dropdown should appear above or below.
         # edge: str = "bottom",  # Literal["top", "bottom"]
         # tracking: Whether the dropdown should follow the cursor or remain static.
@@ -222,6 +248,7 @@ Dropdown .autocomplete--selection-cursor {
         )
         # self._edge = edge
         # self._tracking = tracking
+        self.items = items
         self.input_widget: Input
 
     def compose(self) -> ComposeResult:
@@ -310,6 +337,7 @@ Dropdown .autocomplete--selection-cursor {
                 for item in self.items
                 if value.lower() in cast(Text, item.main).plain.lower()
             ]
+            matches = sorted(matches, key=lambda match: not match.main.plain.lower().startswith(value.lower()))
 
         self.child.matches = matches
         self.display = len(matches) > 0 and value != ""

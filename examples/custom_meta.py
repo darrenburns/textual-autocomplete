@@ -50,7 +50,7 @@ DATA = [
 ]
 
 ITEMS = [
-    DropdownItem(str(rank), city, population)
+    DropdownItem(city, str(rank), population)
     for rank, (city, population) in enumerate(DATA, start=2)
 ]
 
@@ -59,21 +59,30 @@ def get_items(value: str, cursor_position: int) -> list[DropdownItem]:
     maximum_population = int(DATA[0][1].replace(",", ""))
 
     items = []
+
+    # Let's create our dropdown items with custom colours in
+    # the rightmost field (the higher the population, the more green)
     for rank, (city, population) in enumerate(DATA, start=2):
         ratio = float(population.replace(",", "")) / maximum_population
         color = blend_colors(Color.parse("#e86c4a"), Color.parse("#4ed43f"), ratio)
         items.append(
             DropdownItem(
-                Text(str(rank), style="#a1a1a1"),
                 city,
+                Text(str(rank), style="#a1a1a1"),
                 Text(population, style=Style.from_color(color)),
             )
         )
-    return [c for c in items if value.lower() in c.main.plain.lower()]
+
+    # Only keep cities that contain the Input value as a substring
+    matches = [c for c in items if value.lower() in c.main.plain.lower()]
+    # Favour items that start with the Input value, pull them to the top
+    ordered = sorted(matches, key=lambda v: v.main.plain.startswith(value.lower()))
+
+    return ordered
 
 
 class CompletionExample(App):
-    CSS_PATH = "basic.css"
+    CSS_PATH = "custom_meta.css"
 
     BINDINGS = [Binding("ctrl+d", "toggle_dark", "Day/Night")]
 
@@ -82,8 +91,10 @@ class CompletionExample(App):
             Label("Textual Autocomplete", id="lead-text"),
             AutoComplete(
                 Input(id="search-box", placeholder="Search for a UK city..."),
-                Dropdown(id="my-dropdown"),
-                items=get_items,  # Using a callback to dynamically generate items
+                Dropdown(
+                    items=get_items,  # Using a callback to dynamically generate items
+                    id="my-dropdown"
+                ),
             ),
             Label(INFO_TEXT, id="info-text"),
             id="search-container",
