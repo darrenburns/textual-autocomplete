@@ -49,4 +49,5 @@ manager.
 
 - Press the Up or Down arrow keys to force the dropdown to appear.
 - Press Esc to hide the dropdown.
-- 
+
+...
