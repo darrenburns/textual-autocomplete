@@ -100,3 +100,6 @@ You can declare a handler for this event `on_dropdown_selected(self, event)` to 
 to an item being selected.
 
 An item is selected when it's highlighted in the dropdown, and you press Enter or Tab.
+
+Pressing Enter simply fills the value in the dropdown, whilst Tab fills the value
+and then shifts focus from the input.

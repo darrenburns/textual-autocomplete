@@ -20,13 +20,10 @@ class Example01(App):
     """
 
     def compose(self) -> ComposeResult:
-        yield AutoComplete(
-            Input(placeholder="type away..."),
-            Dropdown(items=ITEMS)
-        )
+        yield AutoComplete(Input(placeholder="type away..."), Dropdown(items=ITEMS))
 
 
 app = Example01()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run()

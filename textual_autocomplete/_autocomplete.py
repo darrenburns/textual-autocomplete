@@ -39,13 +39,15 @@ class DropdownRender:
 
         if self.matches:
             if self.matches[0].left_meta:
-                table.add_column("left_meta", justify="left",
-                                 style=get_style("left-column"))
+                table.add_column(
+                    "left_meta", justify="left", style=get_style("left-column")
+                )
             if self.matches[0].main:
                 table.add_column("main", style=get_style("main-column"))
             if self.matches[0].right_meta:
-                table.add_column("right_meta", justify="right",
-                                 style=get_style("right-column"))
+                table.add_column(
+                    "right_meta", justify="right", style=get_style("right-column")
+                )
 
         add_row = table.add_row
         for index, match in enumerate(self.matches):
@@ -326,18 +328,26 @@ Dropdown .autocomplete--selection-cursor {
         if callable(self.items):
             matches = self.items(value, input_cursor_position)
         else:
-            matches = [
+            matches = []
+            for item in self.items:
                 # Casting to Text, since we convert to Text object in
                 # the __post_init__ of DropdownItem.
-                DropdownItem(
-                    left_meta=cast(Text, item.left_meta).copy(),
-                    main=cast(Text, item.main).copy(),
-                    right_meta=cast(Text, item.right_meta).copy(),
-                )
-                for item in self.items
-                if value.lower() in cast(Text, item.main).plain.lower()
-            ]
-            matches = sorted(matches, key=lambda match: not match.main.plain.lower().startswith(value.lower()))
+                text = cast(Text, item.main)
+                if value.lower() in text.plain.lower():
+                    matches.append(
+                        DropdownItem(
+                            left_meta=cast(Text, item.left_meta).copy(),
+                            main=cast(Text, item.main).copy(),
+                            right_meta=cast(Text, item.right_meta).copy(),
+                        )
+                    )
+
+            matches = sorted(
+                matches,
+                key=lambda match: not cast(Text, match.main)
+                .plain.lower()
+                .startswith(value.lower()),
+            )
 
         self.child.matches = matches
         self.display = len(matches) > 0 and value != ""
@@ -364,7 +374,8 @@ Dropdown .autocomplete--selection-cursor {
         line_below_cursor = y + 1 + scroll_target_adjust_y
 
         cursor_screen_position = x + (
-            input_cursor_position - self.input_widget.view_position)
+            input_cursor_position - self.input_widget.view_position
+        )
         self.styles.margin = (
             line_below_cursor,
             right,

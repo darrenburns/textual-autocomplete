@@ -10,7 +10,11 @@ class Quadrant(App):
     def compose(self) -> ComposeResult:
         auto_completes = [
             AutoComplete(
-                Input(classes="search-box", placeholder="Search for a UK city...", id=f"input-{i}"),
+                Input(
+                    classes="search-box",
+                    placeholder="Search for a UK city...",
+                    id=f"input-{i}",
+                ),
                 Dropdown(items=ITEMS, classes=f"dropdown", id=f"dropdown-{i}"),
             )
             for i in range(1, 4)
