@@ -48,7 +48,12 @@ manager.
 As shown in the quickstart, you can wrap the Textual builtin `Input` widget with
 `AutoComplete`, and supply a `Dropdown`. 
 The `AutoComplete` manages communication between the `Input` and the `Dropdown`.
+
 The `Dropdown` is the widget you see on screen, as you type into the input.
+
+The `DropdownItem`s contain up to 3 columns. All must contain a "main" column, which
+is the central column used in the filtering. They can also optionally contain a left and right metadata
+column.
 
 ### Supplying data to `Dropdown`
 
