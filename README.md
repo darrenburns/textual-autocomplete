@@ -17,7 +17,6 @@ https://user-images.githubusercontent.com/5740731/205718330-a9364894-9133-40ca-8
 
 </details>
 
-
 ## Quickstart
 
 Simply wrap a Textual `Input` widget as follows:
@@ -90,6 +89,9 @@ For more fine-grained control over styling, you can target the following CSS cla
 - `.autocomplete--left-column`: the left metadata column, if it exists
 - `.autocomplete--right-column`: the right metadata column, if it exists
 
+Since the 3 columns in `DropdownItem` support Rich `Text` objects, they can be styled dynamically.
+The [custom_meta.py](./examples/custom_meta.py) file is an example of this, showing how the rightmost column is coloured dynamically based on the city population.
+
 The [examples directory](./examples) contains multiple examples of custom styling.
 
 ### Messages
@@ -103,3 +105,13 @@ An item is selected when it's highlighted in the dropdown, and you press Enter o
 
 Pressing Enter simply fills the value in the dropdown, whilst Tab fills the value
 and then shifts focus from the input.
+
+## Other notes
+
+- textual-autocomplete will create a new layer at runtime on the `Screen` that the `AutoComplete` is on. The `Dropdown` will be rendered on this layer.
+- The position of the dropdown is currently fixed _below_ the value entered into the `Input`. This means if your `Input` is at the bottom of the screen, it's probably not going to be much use for now. I'm happy to discuss or look at PRs that offer a flag for having it float above.
+- There's currently no special handling for when the dropdown meets the right-hand side of the screen.
+- Do not apply `margin` to the `Dropdown`. The position of the dropdown is updated by applying margin to the top/left of it.
+- There's currently no debouncing support, but I'm happy to discuss or look at PRs for this.
+- There are a few known issues/TODOs in the code, which will later be transferred to GitHub.
+- Test coverage is currently non-existent - sorry!
