@@ -165,10 +165,13 @@ AutoComplete {
         key = event.key
         if key == "down":
             self.dropdown.cursor_down()
+            event.stop()
         elif key == "up":
             self.dropdown.cursor_up()
+            event.stop()
         elif key == "escape":
             self.dropdown.close()
+            event.stop()
         elif key == "tab":
             self._select_item()
 
@@ -198,7 +201,6 @@ Dropdown {
     display: none;
     overflow: hidden auto;
     background: $panel-lighten-1;
-    width: auto;
     height: auto;
     max-height: 12;
     max-width: 1fr;
