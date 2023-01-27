@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "textual-autocomplete"
-version = "1.0.0b0"
+version = "1.0.1b0"
 description = "Easily add autocomplete dropdowns to your Textual apps."
 authors = ["Darren Burns <darrenb900@gmail.com>"]
 readme = "README.md"
