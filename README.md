@@ -97,7 +97,7 @@ The [examples directory](./examples) contains multiple examples of custom stylin
 
 ### Messages
 
-When you select an item in the dropdown, a `Dropdown.Selected` event is emitted.
+When you select an item in the dropdown, an `AutoComplete.Selected` event is emitted.
 
 You can declare a handler for this event `on_auto_complete_selected(self, event)` to respond
 to an item being selected.
