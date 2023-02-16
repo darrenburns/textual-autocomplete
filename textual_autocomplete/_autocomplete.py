@@ -182,7 +182,9 @@ AutoComplete {
             self.input.value = ""
             self.input.insert_text_at_cursor(selected.main.plain)
             self.dropdown.display = False
-            self.emit_no_wait(self.Selected(self, item=self.dropdown.selected_item))
+            self.post_message_no_wait(
+                self.Selected(self, item=self.dropdown.selected_item)
+            )
 
     class Selected(Message):
         def __init__(self, sender: MessageTarget, item: DropdownItem):
