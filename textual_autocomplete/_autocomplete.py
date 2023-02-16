@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
-from typing import Iterable, ClassVar, Mapping, cast
+from typing import Callable, ClassVar, Iterable, Mapping, cast
 
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.style import Style
@@ -11,9 +10,8 @@ from rich.text import Text, TextType
 from textual import events
 from textual._types import MessageTarget
 from textual.app import ComposeResult
-from textual.geometry import Size, Region
+from textual.geometry import Region, Size
 from textual.message import Message
-from textual.reactive import watch
 from textual.widget import Widget
 from textual.widgets import Input
 
@@ -271,7 +269,7 @@ Dropdown .autocomplete--selection-cursor {
         # TODO: Error cases - Handle case where reference to input widget no
         #  longer exists, for example
 
-        watch(
+        self.watch(
             self.input_widget,
             attribute_name="value",
             callback=self._input_value_changed,
@@ -286,7 +284,7 @@ Dropdown .autocomplete--selection-cursor {
 
         # TODO: Having to use scroll_target here because scroll_y doesn't fire.
         #  Will also probably need separate callbacks for x and y.
-        watch(
+        self.watch(
             self.screen,
             attribute_name="scroll_target_y",
             callback=self.handle_screen_scroll,
