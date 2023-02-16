@@ -278,11 +278,11 @@ Dropdown .autocomplete--selection-cursor {
         )
 
         # TODO - this watcher wasn't firing, potential Textual issue.
-        # watch(
-        #     self.input_widget,
-        #     attribute_name="cursor_position",
-        #     callback=self._input_cursor_position_changed,
-        # )
+        self.watch(
+            self.input_widget,
+            attribute_name="cursor_position",
+            callback=self._input_cursor_position_changed,
+        )
 
         # TODO: Having to use scroll_target here because scroll_y doesn't fire.
         #  Will also probably need separate callbacks for x and y.
