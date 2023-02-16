@@ -9,14 +9,14 @@ packages = [{ include = "textual_autocomplete" }]
 [tool.poetry.dependencies]
 python = "^3.7.8"
 #textual = {path="../textual", develop=true}
-textual = "^0.10.1"
+textual = "^0.11.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^0.991"
 black = "^22.10.0"
 #textual = { version = "^0.10.0", extras = ["dev"] }
-textual = {version = "^0.10.1", extras = ["dev"]}
-ward = {version = "^0.67.2b0", allow-prereleases = true}
+textual = { version = "^0.11.0", extras = ["dev"] }
+ward = { version = "^0.67.2b0", allow-prereleases = true }
 
 [build-system]
 requires = ["poetry-core"]
