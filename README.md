@@ -71,7 +71,8 @@ as shown in the quickstart.
 #### Using a callable
 
 Instead of passing a list of `DropdownItems`, you can supply a callback function
-which will be called with the current value and cursor position in the input.
+which will be called with the current input state. From this function, you should 
+return the list of `DropdownItems` you wish to be displayed.
 
 See [here](./examples/custom_meta.py) for a usage example.
 
