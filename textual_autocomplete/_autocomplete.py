@@ -278,7 +278,7 @@ Dropdown .autocomplete--selection-cursor {
 
     def __init__(
         self,
-        items: list[DropdownItem] | Callable[[str, int], list[DropdownItem]],
+        items: list[DropdownItem] | Callable[[InputState], list[DropdownItem]],
         # edge: Whether the dropdown should appear above or below.
         # edge: str = "bottom",  # Literal["top", "bottom"]
         # tracking: Whether the dropdown should follow the cursor or remain static.
@@ -292,7 +292,7 @@ Dropdown .autocomplete--selection-cursor {
         Args:
             items: A list of dropdown items, or a function to call to retrieve the list
                 of dropdown items for the current input value and cursor position.
-                Function takes the current input value and cursor position as arguments, and returns a list of
+                Function takes the current InputState as an argument, and returns a list of
                 `DropdownItem` which will be displayed in the dropdown list.
             id: The ID of the widget, allowing you to directly refer to it using CSS and queries.
             classes: The classes of this widget, a space separated string.
@@ -378,7 +378,8 @@ Dropdown .autocomplete--selection-cursor {
 
     def sync_state(self, value: str, input_cursor_position: int) -> None:
         if callable(self.items):
-            matches = self.items(value, input_cursor_position)
+            input_state = InputState(value=value, cursor_position=input_cursor_position)
+            matches = self.items(input_state)
         else:
             matches = []
             for item in self.items:

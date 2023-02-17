@@ -9,7 +9,8 @@ from textual.containers import Container
 from textual.renderables._blend_colors import blend_colors
 from textual.widgets import Input, Footer, Label
 
-from textual_autocomplete._autocomplete import AutoComplete, DropdownItem, Dropdown
+from textual_autocomplete._autocomplete import AutoComplete, DropdownItem, Dropdown, \
+    InputState
 
 INFO_TEXT = """\
 Cities are ranked by population.
@@ -55,7 +56,7 @@ ITEMS = [
 ]
 
 
-def get_items(value: str, cursor_position: int) -> list[DropdownItem]:
+def get_items(input_state: InputState) -> list[DropdownItem]:
     maximum_population = int(DATA[0][1].replace(",", ""))
 
     items = []
@@ -74,9 +75,9 @@ def get_items(value: str, cursor_position: int) -> list[DropdownItem]:
         )
 
     # Only keep cities that contain the Input value as a substring
-    matches = [c for c in items if value.lower() in c.main.plain.lower()]
+    matches = [c for c in items if input_state.value.lower() in c.main.plain.lower()]
     # Favour items that start with the Input value, pull them to the top
-    ordered = sorted(matches, key=lambda v: v.main.plain.startswith(value.lower()))
+    ordered = sorted(matches, key=lambda v: v.main.plain.startswith(input_state.value.lower()))
 
     return ordered
 
