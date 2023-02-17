@@ -3,7 +3,11 @@ from textual.containers import Container
 from textual.widgets import Input, Footer
 
 from examples.custom_meta import ITEMS, get_items
-from textual_autocomplete._autocomplete import AutoComplete, Dropdown
+from textual_autocomplete._autocomplete import AutoComplete, Dropdown, InputState
+
+
+def completion_strategy(selected: str, input_state: InputState) -> InputState:
+    return InputState(value="ham", cursor_position=1)
 
 
 class Quadrant(App):
@@ -28,6 +32,7 @@ class Quadrant(App):
                     classes="dropdown",
                     id="dropdown-4",
                 ),
+                completion_strategy=completion_strategy,
             ),
             id="grid",
         )

@@ -121,6 +121,15 @@ class DropdownItem:
             self.right_meta = Text(self.right_meta)
 
 
+@dataclass
+class InputState:
+    value: str
+    cursor_position: int
+
+
+CompletionStrategy = "Literal['append', 'replace', 'insert'] | Callable[[str, InputState], InputState]"
+
+
 class AutoComplete(Widget):
     DEFAULT_CSS = """\
 AutoComplete {
@@ -134,6 +143,7 @@ AutoComplete {
         input: Input,
         dropdown: Dropdown,
         tab_moves_focus: bool = False,
+        completion_strategy: CompletionStrategy = "replace",
         *,
         id: str | None = None,
         classes: str | None = None,
@@ -146,20 +156,32 @@ AutoComplete {
             input: The input widget that you want to power the dropdown.
             dropdown: The dropdown widget. This will be populated by AutoComplete.
             tab_moves_focus: Set to True to also shift focus after completing using the Tab key.
+            completion_strategy: When a value is selected from the dropdown,
+                how does it get inserted into the Input? The default "append",
+                appends the selected string to the end of the current value in the
+                input. "replace" will replace the value in the input with the chosen
+                dropdown item. "insert" will insert the value without deleting any of
+                the text currently in the input. You can also pass a callback function
+                for more advanced completion. When a user selects a value in the
+                dropdown, the library will call this function and pass in the selected
+                value and the current InputState. Return a new InputState object from
+                this function, and textual-autocomplete will update the Input accordingly.
+
         """
         super().__init__(id=id, classes=classes)
         self.input = input
         self.dropdown = dropdown
         self.dropdown.input_widget = self.input
         self.tab_moves_focus = tab_moves_focus
+        self.completion_strategy = completion_strategy
 
     def compose(self) -> ComposeResult:
         yield self.input
 
-    def on_mount(self, event: events.Mount) -> None:
+    def on_mount(self) -> None:
         self.screen.mount(self.dropdown)
 
-    def on_descendant_blur(self, event: events.DescendantBlur) -> None:
+    def on_descendant_blur(self) -> None:
         self.dropdown.display = False
 
     def on_key(self, event: events.Key) -> None:
@@ -181,14 +203,35 @@ AutoComplete {
                 if not self.tab_moves_focus:
                     event.stop()  # Prevent focus change
 
-    def on_input_submitted(self, event: Input.Submitted) -> None:
+    def on_input_submitted(self) -> None:
         self._select_item()
 
     def _select_item(self):
         selected = self.dropdown.selected_item
+        completion_strategy = self.completion_strategy
         if self.dropdown.display and selected is not None:
-            self.input.value = ""
-            self.input.insert_text_at_cursor(selected.main.plain)
+            selected_value = selected.main.plain
+            if completion_strategy == "replace":
+                self.input.value = ""
+                self.input.insert_text_at_cursor(selected_value)
+            elif completion_strategy == "insert":
+                self.input.insert_text_at_cursor(selected_value)
+            elif completion_strategy == "append":
+                old_value = self.input.value
+                new_value = old_value + selected_value
+                self.input.value = new_value
+                self.input.action_end()
+            else:
+                new_state = completion_strategy(
+                    selected_value,
+                    InputState(
+                        value=self.input.value,
+                        cursor_position=self.input.cursor_position,
+                    ),
+                )
+                self.input.value = new_state.value
+                self.input.cursor_position = new_state.cursor_position
+
             self.dropdown.display = False
             self.post_message_no_wait(
                 self.Selected(self, item=self.dropdown.selected_item)
@@ -354,8 +397,8 @@ Dropdown .autocomplete--selection-cursor {
             matches = sorted(
                 matches,
                 key=lambda match: not cast(Text, match.main)
-                .plain.lower()
-                .startswith(value.lower()),
+                    .plain.lower()
+                    .startswith(value.lower()),
             )
 
         self.child.matches = matches
