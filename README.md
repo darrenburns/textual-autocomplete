@@ -13,6 +13,10 @@ https://user-images.githubusercontent.com/5740731/205718330-a9364894-9133-40ca-8
 
 </details>
 
+> **Warning**
+> Textual still has a major version number of `0`, meaning there are still significant API changes happening which can sometimes impact this project.
+> I'll do my best to keep it compatible with the latest version of Textual, but there may be a slight delay between Textual releases and this library working with said release.
+
 ## Quickstart
 
 Simply wrap a Textual `Input` widget as follows:
