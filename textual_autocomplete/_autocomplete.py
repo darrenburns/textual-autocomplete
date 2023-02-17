@@ -133,6 +133,7 @@ AutoComplete {
         self,
         input: Input,
         dropdown: Dropdown,
+        tab_moves_focus: bool = False,
         *,
         id: str | None = None,
         classes: str | None = None,
@@ -144,11 +145,13 @@ AutoComplete {
         Args:
             input: The input widget that you want to power the dropdown.
             dropdown: The dropdown widget. This will be populated by AutoComplete.
+            tab_moves_focus: Set to True to also shift focus after completing using the Tab key.
         """
         super().__init__(id=id, classes=classes)
         self.input = input
         self.dropdown = dropdown
         self.dropdown.input_widget = self.input
+        self.tab_moves_focus = tab_moves_focus
 
     def compose(self) -> ComposeResult:
         yield self.input
@@ -171,7 +174,12 @@ AutoComplete {
             self.dropdown.close()
             event.stop()
         elif key == "tab":
-            self._select_item()
+            # Only interfere if there's a dropdown visible,
+            # otherwise, we want things to behave like a normal input.
+            if self.dropdown.display:
+                self._select_item()
+                if not self.tab_moves_focus:
+                    event.stop()  # Prevent focus change
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         self._select_item()
@@ -277,7 +285,6 @@ Dropdown .autocomplete--selection-cursor {
             callback=self._input_value_changed,
         )
 
-        # TODO - this watcher wasn't firing, potential Textual issue.
         self.watch(
             self.input_widget,
             attribute_name="cursor_position",
