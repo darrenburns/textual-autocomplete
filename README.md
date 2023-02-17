@@ -2,7 +2,7 @@
 
 textual-autocomplete is a Python library for creating dropdown autocompletion menus in
 Textual applications, allowing users to quickly select from a list of suggestions as
-they type.
+they type. It supports Textual version 0.11.0 and above.
 
 <img width="554" alt="image" src="https://user-images.githubusercontent.com/5740731/205718538-5599a9db-48a2-49dd-99c3-34d43459b81a.png">
 
