@@ -403,7 +403,9 @@ Dropdown .autocomplete--selection-cursor {
             )
 
         self.child.matches = matches
-        self.display = len(matches) > 0 and value != ""
+        self.display = (
+            len(matches) > 0 and value != "" and self.input_widget.has_focus()
+        )
         self.cursor_home()
         self.reposition(input_cursor_position)
         self.child.refresh()
