@@ -233,13 +233,13 @@ AutoComplete {
                 self.input.cursor_position = new_state.cursor_position
 
             self.dropdown.display = False
-            self.post_message_no_wait(
-                self.Selected(self, item=self.dropdown.selected_item)
+            self.post_message(
+                self.Selected(item=self.dropdown.selected_item)
             )
 
     class Selected(Message):
-        def __init__(self, sender: MessageTarget, item: DropdownItem):
-            super().__init__(sender)
+        def __init__(self, item: DropdownItem):
+            super().__init__()
             self.item = item
 
 
@@ -264,7 +264,7 @@ Dropdown .autocomplete--highlight-match {
 }
 
 Dropdown .autocomplete--selection-cursor {
-    background: $boost 8%;
+    background: $boost;
 }
     """
 
