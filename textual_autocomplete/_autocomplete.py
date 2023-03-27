@@ -127,7 +127,9 @@ class InputState:
     cursor_position: int
 
 
-CompletionStrategy = "Literal['append', 'replace', 'insert'] | Callable[[str, InputState], InputState]"
+CompletionStrategy = (
+    "Literal['append', 'replace', 'insert'] | Callable[[str, InputState], InputState]"
+)
 
 
 class AutoComplete(Widget):
@@ -402,12 +404,12 @@ Dropdown .autocomplete--selection-cursor {
             matches = sorted(
                 matches,
                 key=lambda match: not cast(Text, match.main)
-                    .plain.lower()
-                    .startswith(value.lower()),
+                .plain.lower()
+                .startswith(value.lower()),
             )
 
         self.child.matches = matches
-        self.display = len(matches) > 0 and value != ""
+        self.display = len(matches) > 0 and value != "" and self.input_widget.has_focus
         self.cursor_home()
         self.reposition(input_cursor_position)
         self.child.refresh()
