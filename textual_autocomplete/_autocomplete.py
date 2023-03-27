@@ -185,6 +185,10 @@ AutoComplete {
         self.dropdown.display = False
 
     def on_key(self, event: events.Key) -> None:
+        if not self.dropdown.display:
+            # only respond and stop the event if the dropdown is open
+            return
+
         key = event.key
         if key == "down":
             self.dropdown.cursor_down()
