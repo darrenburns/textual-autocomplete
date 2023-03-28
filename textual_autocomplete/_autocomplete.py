@@ -8,7 +8,6 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text, TextType
 from textual import events
-from textual._types import MessageTarget
 from textual.app import ComposeResult
 from textual.geometry import Region, Size
 from textual.message import Message
@@ -135,7 +134,6 @@ CompletionStrategy = (
 class AutoComplete(Widget):
     DEFAULT_CSS = """\
 AutoComplete {
-    height: auto;
     align-horizontal: center;
 }
     """
@@ -516,4 +514,4 @@ DropdownChild {
             width=1,
         )
         self.parent.scroll_to_region(region=region, animate=False)
-        self.refresh()
+        self.refresh(layout=True)
