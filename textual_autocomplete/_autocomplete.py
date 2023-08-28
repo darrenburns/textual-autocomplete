@@ -366,10 +366,10 @@ Dropdown .autocomplete--selection-cursor {
         if self.display:
             self.display = False
 
-    def on_mouse_move(self, event: events.MouseMove):
+    def on_mouse_move(self, event: events.MouseMove) -> None:
         self.child.selected_index = event.y
 
-    async def on_click(self, event: events.Click):
+    async def on_click(self, event: events.Click) -> None:
         await self.input_widget.action_submit()
 
     @property
