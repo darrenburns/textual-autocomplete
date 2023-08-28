@@ -237,9 +237,7 @@ AutoComplete {
                 self.input.cursor_position = new_state.cursor_position
 
             self.dropdown.display = False
-            self.post_message(
-                self.Selected(item=self.dropdown.selected_item)
-            )
+            self.post_message(self.Selected(item=self.dropdown.selected_item))
 
     class Selected(Message):
         def __init__(self, item: DropdownItem):
@@ -367,6 +365,12 @@ Dropdown .autocomplete--selection-cursor {
     def close(self) -> None:
         if self.display:
             self.display = False
+
+    def on_mouse_move(self, event: events.MouseMove):
+        self.child.selected_index = event.y
+
+    async def on_click(self, event: events.Click):
+        await self.input_widget.action_submit()
 
     @property
     def selected_item(self) -> DropdownItem | None:
