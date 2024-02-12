@@ -143,6 +143,7 @@ AutoComplete {
         input: Input,
         dropdown: Dropdown,
         tab_moves_focus: bool = False,
+        enter_submits: bool = True,
         completion_strategy: CompletionStrategy = "replace",
         *,
         id: str | None = None,
@@ -156,6 +157,7 @@ AutoComplete {
             input: The input widget that you want to power the dropdown.
             dropdown: The dropdown widget. This will be populated by AutoComplete.
             tab_moves_focus: Set to True to also shift focus after completing using the Tab key.
+            enter_submits: Set to False to prevent the Enter key from submitting the input.
             completion_strategy: When a value is selected from the dropdown,
                 how does it get inserted into the Input? The default "append",
                 appends the selected string to the end of the current value in the
@@ -173,6 +175,7 @@ AutoComplete {
         self.dropdown = dropdown
         self.dropdown.input_widget = self.input
         self.tab_moves_focus = tab_moves_focus
+        self.enter_submits = enter_submits
         self.completion_strategy = completion_strategy
 
     def compose(self) -> ComposeResult:
@@ -206,6 +209,11 @@ AutoComplete {
                 self._select_item()
                 if not self.tab_moves_focus:
                     event.stop()  # Prevent focus change
+        elif not self.enter_submits and key == "enter":
+            if self.dropdown.display:
+                self._select_item()
+                if not self.tab_moves_focus:
+                    event.stop()
 
     def on_input_submitted(self) -> None:
         self._select_item()
@@ -237,9 +245,7 @@ AutoComplete {
                 self.input.cursor_position = new_state.cursor_position
 
             self.dropdown.display = False
-            self.post_message(
-                self.Selected(item=self.dropdown.selected_item)
-            )
+            self.post_message(self.Selected(item=self.dropdown.selected_item))
 
     class Selected(Message):
         def __init__(self, item: DropdownItem):
