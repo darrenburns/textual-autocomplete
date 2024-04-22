@@ -13,6 +13,7 @@ from textual.geometry import Region, Size
 from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Input
+from textual.events import MouseMove, Click, MouseScrollUp, MouseScrollDown
 
 
 class DropdownRender:
@@ -172,6 +173,7 @@ AutoComplete {
         self.input = input
         self.dropdown = dropdown
         self.dropdown.input_widget = self.input
+        self.dropdown.auto_complete_widget = self
         self.tab_moves_focus = tab_moves_focus
         self.completion_strategy = completion_strategy
 
@@ -237,9 +239,7 @@ AutoComplete {
                 self.input.cursor_position = new_state.cursor_position
 
             self.dropdown.display = False
-            self.post_message(
-                self.Selected(item=self.dropdown.selected_item)
-            )
+            self.post_message(self.Selected(item=self.dropdown.selected_item))
 
     class Selected(Message):
         def __init__(self, item: DropdownItem):
@@ -311,6 +311,7 @@ Dropdown .autocomplete--selection-cursor {
         self.items = items
         self.input_widget: Input
         self.always_display = always_display
+        self.auto_complete_widget: AutoComplete
 
     def compose(self) -> ComposeResult:
         self.child = DropdownChild(self.input_widget)
@@ -357,7 +358,6 @@ Dropdown .autocomplete--selection-cursor {
         if self.input_widget is not None:
             self.sync_state(self.input_widget.value, self.input_widget.cursor_position)
 
-
     # The new callback function is used to control the behavior when the focus changes,
     # I put the always_display variable judgment here, can make it dynamic judgment
     def _input_focus_changed(self, has_focus: bool) -> None:
@@ -398,6 +398,12 @@ Dropdown .autocomplete--selection-cursor {
         if self.input_widget is not None:
             self.sync_state(value, self.input_widget.cursor_position)
 
+    async def on_mouse_scroll(self, event: MouseScrollDown | MouseScrollUp) -> None:
+        if event.delta_y > 0:
+            self.cursor_up()
+        elif event.delta_y < 0:
+            self.cursor_down()
+
     # new add
     def sync_state(self, value: str, input_cursor_position: int) -> None:
         if callable(self.items):
@@ -428,8 +434,7 @@ Dropdown .autocomplete--selection-cursor {
         self.child.matches = matches
         if len(matches) > 0 and self.input_widget.has_focus and value != "":
             self.display = True
-        elif len(matches
-                 ) > 0 and self.input_widget.has_focus and self.always_display:
+        elif len(matches) > 0 and self.input_widget.has_focus and self.always_display:
             self.display = True
         else:
             self.display = False
@@ -514,6 +519,21 @@ DropdownChild {
 
     def get_content_height(self, container: Size, viewport: Size, width: int) -> int:
         return len(self.matches)
+
+    async def on_mouse_move(self, event: MouseMove) -> None:
+        for index, item in enumerate(self.matches):
+            item_region = Region(x=0, y=index, width=self.size.width, height=1)
+            if item_region.contains_point([event.x, event.y]):
+                self.selected_index = index
+                self.refresh()
+                break
+
+    async def on_click(self, event: Click) -> None:
+        if event.button == 1:  # Left click
+            selected_item = self.selected_item
+            if selected_item:
+                self.parent.auto_complete_widget._select_item()
+                event.stop()
 
     @property
     def selected_item(self) -> DropdownItem | None:
