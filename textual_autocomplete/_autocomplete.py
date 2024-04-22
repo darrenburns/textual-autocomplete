@@ -289,6 +289,7 @@ Dropdown .autocomplete--selection-cursor {
         # tracking: str = "follow_cursor",  # Literal["follow_cursor", "static"]
         id: str | None = None,
         classes: str | None = None,
+        always_display: bool = False,
     ):
         """Construct an Autocomplete. Autocomplete only works if your Screen has a dedicated layer
         called `textual-autocomplete`.
@@ -309,6 +310,7 @@ Dropdown .autocomplete--selection-cursor {
         # self._tracking = tracking
         self.items = items
         self.input_widget: Input
+        self.always_display = always_display
 
     def compose(self) -> ComposeResult:
         self.child = DropdownChild(self.input_widget)
@@ -346,8 +348,24 @@ Dropdown .autocomplete--selection-cursor {
             callback=self.handle_screen_scroll,
         )
 
+        # New watch
+        self.watch(
+            self.input_widget,
+            attribute_name="has_focus",
+            callback=self._input_focus_changed,
+        )
         if self.input_widget is not None:
             self.sync_state(self.input_widget.value, self.input_widget.cursor_position)
+
+
+    # The new callback function is used to control the behavior when the focus changes,
+    # I put the always_display variable judgment here, can make it dynamic judgment
+    def _input_focus_changed(self, has_focus: bool) -> None:
+        if has_focus and self.always_display:
+            self.sync_state(self.input_widget.value, self.input_widget.cursor_position)
+
+        else:
+            self.display = False
 
     def cursor_up(self) -> None:
         if not self.display:
@@ -380,6 +398,7 @@ Dropdown .autocomplete--selection-cursor {
         if self.input_widget is not None:
             self.sync_state(value, self.input_widget.cursor_position)
 
+    # new add
     def sync_state(self, value: str, input_cursor_position: int) -> None:
         if callable(self.items):
             input_state = InputState(value=value, cursor_position=input_cursor_position)
@@ -407,7 +426,13 @@ Dropdown .autocomplete--selection-cursor {
             )
 
         self.child.matches = matches
-        self.display = len(matches) > 0 and value != "" and self.input_widget.has_focus
+        if len(matches) > 0 and self.input_widget.has_focus and value != "":
+            self.display = True
+        elif len(matches
+                 ) > 0 and self.input_widget.has_focus and self.always_display:
+            self.display = True
+        else:
+            self.display = False
         self.cursor_home()
         self.reposition(input_cursor_position)
         self.child.refresh()
