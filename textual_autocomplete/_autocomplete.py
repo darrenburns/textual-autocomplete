@@ -135,6 +135,8 @@ class AutoComplete(Widget):
     DEFAULT_CSS = """\
 AutoComplete {
     align-horizontal: center;
+    width: auto;
+    height: auto;
 }
     """
 
@@ -237,9 +239,7 @@ AutoComplete {
                 self.input.cursor_position = new_state.cursor_position
 
             self.dropdown.display = False
-            self.post_message(
-                self.Selected(item=self.dropdown.selected_item)
-            )
+            self.post_message(self.Selected(item=self.dropdown.selected_item))
 
     class Selected(Message):
         def __init__(self, item: DropdownItem):
@@ -251,14 +251,12 @@ class Dropdown(Widget):
     DEFAULT_CSS = """\
 Dropdown {
     layer: textual-autocomplete;
-    /* to prevent parent `align` confusing things, we dock to remove from flow */
-    dock: top;
     display: none;
     overflow: hidden auto;
     background: $panel-lighten-1;
     height: auto;
+    width: auto;
     max-height: 12;
-    max-width: 1fr;
     scrollbar-size-vertical: 1;
 }
 
@@ -319,7 +317,6 @@ Dropdown .autocomplete--selection-cursor {
         if not "textual-autocomplete" in screen_layers:
             screen_layers.append("textual-autocomplete")
 
-        # TODO: Ignoring type below because Textual is typed incorrectly here.
         #  Style property setter for layers has incorrect type.
         self.screen.styles.layers = tuple(screen_layers)  # type: ignore
 
@@ -409,7 +406,7 @@ Dropdown .autocomplete--selection-cursor {
         self.child.matches = matches
         self.display = len(matches) > 0 and value != "" and self.input_widget.has_focus
         self.cursor_home()
-        self.reposition(input_cursor_position)
+        self.styles.margin = self.input_widget.cursor_screen_offset
         self.child.refresh()
 
     def handle_screen_scroll(self, old: float, new: float) -> None:
@@ -448,6 +445,7 @@ class DropdownChild(Widget):
     DEFAULT_CSS = """\
 DropdownChild {
     height: auto;
+    width: auto;
 }
     """
 
