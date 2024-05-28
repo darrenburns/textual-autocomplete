@@ -1,13 +1,13 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Input
+from textual.widgets import Input, TextArea
 
 from textual_autocomplete import AutoComplete, DropdownItem
 
 
 class Version2(App[None]):
     def compose(self) -> ComposeResult:
-        # input = TextArea()
-        input = Input()
+        input = TextArea()
+        # input = Input()
         yield input
         yield AutoComplete(
             target=input,

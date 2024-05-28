@@ -124,13 +124,21 @@ class AutoComplete(Widget):
         #     callback=lambda: 1,
         # )
 
-    def _hijack_keypress(self, event) -> None:
+    def _hijack_keypress(self, event: events.Event) -> None:
         """Hijack some keypress events of the target widget."""
+        # TODO - usually we only need hijack if there are results.
         if isinstance(event, events.Key):
             if event.key == "down":
-                # TODO - only hijack this if there are results.
-                self.option_list.can_focus = True
-                self.option_list.focus(scroll_visible=False)
+                event.prevent_default()
+                self.option_list.highlighted += 1
+            elif event.key == "up":
+                event.prevent_default()
+                self.option_list.highlighted -= 1
+            elif event.key == "enter":
+                pass  # TODO - send content to target based on completion strategy
+            elif event.key == "tab":
+                # TODO - possibly also shift focus
+                pass  # TODO - send content to target based on completion strategy
             elif event.key == "escape":
                 self.styles.display = "none"
                 self.action_hide()
@@ -176,7 +184,6 @@ class AutoComplete(Widget):
         ).translate_inside(self.screen.region)
 
         self.styles.offset = x, y
-        print(self.target.size)
 
     def _unify_target_state(self) -> TargetState:
         target = self.target
@@ -191,8 +198,15 @@ class AutoComplete(Widget):
     def _handle_target_update(self) -> None:
         """Called when the state (text or selection) of the target is updated."""
         state = self._unify_target_state()
+        self._rebuild_options(state)
         self._align_to_target()
-        print(state)
+
+    def _rebuild_options(self, target_state: TargetState) -> None:
+        """Rebuild the options in the dropdown."""
+        items = self.items
+        if callable(items):
+            # Pass the target state to the callable.
+            items = items(target_state)
 
     @property
     def option_list(self) -> OptionList:
