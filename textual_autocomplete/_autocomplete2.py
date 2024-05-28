@@ -36,6 +36,7 @@ class DropdownItem(Option):
         main: TextType,
         left_meta: TextType,
         right_meta: TextType,
+        target_state: TargetState,
         highlight_ranges: Iterable[tuple[int, int]] | None = None,
         id: str | None = None,
         disabled: bool = False,
@@ -63,7 +64,12 @@ class DropdownItem(Option):
         self.right_meta = (
             Text(right_meta) if isinstance(right_meta, str) else right_meta
         )
+        self.target_state = target_state
         self.highlight_ranges = highlight_ranges
+
+        highlighted = self.main.highlight_words(
+            [target_state.text], "on yellow", case_sensitive=False
+        )
         super().__init__(self.main, id, disabled)
 
 
@@ -261,6 +267,7 @@ class AutoComplete(Widget):
                             left_meta=item.left_meta.copy(),
                             main=item.main.copy(),
                             right_meta=item.right_meta.copy(),
+                            target_state=target_state,
                         )
                     )
 
