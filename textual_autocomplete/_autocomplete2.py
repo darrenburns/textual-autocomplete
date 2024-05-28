@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable, Iterable, cast
+from rich.measure import Measurement
 from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
@@ -66,6 +67,20 @@ class DropdownItem(Option):
         super().__init__(self.main, id, disabled)
 
 
+class AutoCompleteList(OptionList):
+    def get_content_width(self, container: events.Size, viewport: events.Size) -> int:
+        """Get maximum width of options."""
+        console = self.app.console
+        options = console.options
+        return max(
+            (
+                Measurement.get(console, options, option.prompt).maximum
+                for option in self._options
+            ),
+            default=0,
+        )
+
+
 class AutoComplete(Widget):
     BINDINGS = [
         Binding("escape", "hide", "Hide dropdown", show=False),
@@ -78,20 +93,8 @@ class AutoComplete(Widget):
         width: auto;
         max-height: 12;
         scrollbar-size-vertical: 1;
-        padding: 0;
-        margin: 0;
-        border: none;
 
-        & .autocomplete--highlight-match {
-            color: $accent-lighten-2;
-            text-style: bold;
-        }
-
-        & .autocomplete--selection-cursor {
-            background: $boost;
-        }
-
-        & OptionList {
+        & AutoCompleteList {
             width: auto;
             height: auto;
             border: none;
@@ -130,7 +133,7 @@ class AutoComplete(Widget):
         self.items = items
 
     def compose(self) -> ComposeResult:
-        option_list = OptionList(*["one", "two", "three"])
+        option_list = AutoCompleteList()
         option_list.can_focus = False
         yield option_list
 
@@ -140,7 +143,7 @@ class AutoComplete(Widget):
         await self.target._mounted_event.wait()  # TODO - timeout this wait
         self.target.message_signal.subscribe(self, self._hijack_keypress)
         self._subscribe_to_target()
-        self._align_to_target()
+        self._handle_target_update()
 
         # TODO - we probably need a means of checking if the screen offset
         # of the target widget has changed at all.
@@ -174,13 +177,10 @@ class AutoComplete(Widget):
                 # TODO - possibly also shift focus
                 pass  # TODO - send content to target based on completion strategy
             elif event.key == "escape":
-                self.styles.display = "none"
                 self.action_hide()
 
     def action_hide(self) -> None:
         self.styles.display = "none"
-        if not self.target.has_focus:
-            self.target.focus(scroll_visible=False)
 
     @property
     def target(self) -> Input | TextArea:
@@ -232,6 +232,7 @@ class AutoComplete(Widget):
         """Called when the state (text or selection) of the target is updated."""
         state = self._unify_target_state()
         self._rebuild_options(state)
+        self.styles.display = "block" if self.option_list.option_count else "none"
         self._align_to_target()
 
     def _rebuild_options(self, target_state: TargetState) -> None:
@@ -241,7 +242,6 @@ class AutoComplete(Widget):
         matches = self._compute_matches(target_state)
         if matches:
             option_list.add_options(matches)
-            option_list.highlighted = 0
 
     def _compute_matches(self, target_state: TargetState) -> list[DropdownItem]:
         """Compute the matches based on the target state."""
