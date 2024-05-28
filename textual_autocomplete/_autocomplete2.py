@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Iterable, cast
+from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -30,9 +31,39 @@ class InvalidTarget(Exception):
 
 class DropdownItem(Option):
     def __init__(
-        self, left: str, id: str | None = None, disabled: bool = False
+        self,
+        main: TextType,
+        left_meta: TextType,
+        right_meta: TextType,
+        highlight_ranges: Iterable[tuple[int, int]] | None = None,
+        id: str | None = None,
+        disabled: bool = False,
     ) -> None:
-        super().__init__(prompt, id, disabled)
+        """A single option appearing in the autocompletion dropdown. Each option has up to 3 columns.
+        Note that this is not a widget, it's simply a data structure for describing dropdown items.
+
+        Args:
+            left: The left column will often contain an icon/symbol, the main (middle)
+                column contains the text that represents this option.
+            main: The main text representing this option - this will be highlighted by default.
+                In an IDE, the `main` (middle) column might contain the name of a function or method.
+            right: The text appearing in the right column of the dropdown.
+                The right column often contains some metadata relating to this option.
+            highlight_ranges: Custom ranges to highlight. By default, the value is None,
+                meaning textual-autocomplete will highlight substrings in the dropdown.
+                That is, if the value you've typed into the Input is a substring of the candidates
+                `main` attribute, then that substring will be highlighted. If you supply your own
+                implementation of `items` which uses a more complex process to decide what to
+                display in the dropdown, then you can customise the highlighting of the returned
+                candidates by supplying index ranges to highlight.
+        """
+        self.main = Text(main) if isinstance(main, str) else main
+        self.left_meta = Text(left_meta) if isinstance(left_meta, str) else left_meta
+        self.right_meta = (
+            Text(right_meta) if isinstance(right_meta, str) else right_meta
+        )
+        self.highlight_ranges = highlight_ranges
+        super().__init__(self.main, id, disabled)
 
 
 class AutoComplete(Widget):
@@ -128,12 +159,15 @@ class AutoComplete(Widget):
         """Hijack some keypress events of the target widget."""
         # TODO - usually we only need hijack if there are results.
         if isinstance(event, events.Key):
+            highlighted = self.option_list.highlighted or 0
             if event.key == "down":
                 event.prevent_default()
-                self.option_list.highlighted += 1
+                highlighted = (highlighted + 1) % self.option_list.option_count
+                self.option_list.highlighted = highlighted
             elif event.key == "up":
                 event.prevent_default()
-                self.option_list.highlighted -= 1
+                highlighted = (highlighted - 1) % self.option_list.option_count
+                self.option_list.highlighted = highlighted
             elif event.key == "enter":
                 pass  # TODO - send content to target based on completion strategy
             elif event.key == "tab":
@@ -169,7 +203,6 @@ class AutoComplete(Widget):
             self.watch(target, "selection", self._handle_target_update)
 
     def _align_to_target(self) -> None:
-        print("aligning to target...")
         cursor_x, cursor_y = self.target.cursor_screen_offset
         if (cursor_x, cursor_y) == (0, 0):
             cursor_x, cursor_y = self.target.content_region.offset
@@ -203,10 +236,42 @@ class AutoComplete(Widget):
 
     def _rebuild_options(self, target_state: TargetState) -> None:
         """Rebuild the options in the dropdown."""
+        option_list = self.option_list
+        option_list.clear_options()
+        matches = self._compute_matches(target_state)
+        if matches:
+            option_list.add_options(matches)
+            option_list.highlighted = 0
+
+    def _compute_matches(self, target_state: TargetState) -> list[DropdownItem]:
+        """Compute the matches based on the target state."""
         items = self.items
         if callable(items):
             # Pass the target state to the callable.
-            items = items(target_state)
+            matches = items(target_state)
+        else:
+            matches: list[DropdownItem] = []
+            assert isinstance(items, list)
+            value = target_state.text
+            for item in items:
+                text = item.main
+                if value.lower() in text.plain.lower():
+                    matches.append(
+                        DropdownItem(
+                            left_meta=item.left_meta.copy(),
+                            main=item.main.copy(),
+                            right_meta=item.right_meta.copy(),
+                        )
+                    )
+
+            matches = sorted(
+                matches,
+                key=lambda match: not match.main.plain.lower().startswith(
+                    value.lower()
+                ),
+            )
+
+        return matches
 
     @property
     def option_list(self) -> OptionList:
