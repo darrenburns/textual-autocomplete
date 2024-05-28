@@ -68,7 +68,7 @@ class DropdownItem(Option):
         self.highlight_ranges = highlight_ranges
 
         highlighted = self.main.highlight_words(
-            [target_state.text], "on yellow", case_sensitive=False
+            [target_state.text], "black on yellow", case_sensitive=False
         )
         super().__init__(self.main, id, disabled)
 
@@ -248,6 +248,7 @@ class AutoComplete(Widget):
         matches = self._compute_matches(target_state)
         if matches:
             option_list.add_options(matches)
+            option_list.highlighted = 0
 
     def _compute_matches(self, target_state: TargetState) -> list[DropdownItem]:
         """Compute the matches based on the target state."""
