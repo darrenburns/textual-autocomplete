@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, ClassVar, Iterable, Mapping, cast
+from typing import Callable, ClassVar, Iterable, Literal, Mapping, cast
 
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.style import Style
@@ -127,7 +127,7 @@ class InputState:
 
 
 CompletionStrategy = (
-    "Literal['append', 'replace', 'insert'] | Callable[[str, InputState], InputState]"
+    'Literal["append", "replace", "insert"] | Callable[[str, InputState], InputState]'
 )
 
 

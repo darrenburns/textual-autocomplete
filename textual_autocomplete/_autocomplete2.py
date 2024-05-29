@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Iterable, cast
+from typing import Callable, Iterable, Literal, cast
 from rich.measure import Measurement
 from rich.text import Text, TextType
 from textual import events
@@ -13,8 +13,6 @@ from textual.widgets import Input, TextArea, OptionList
 from textual.widgets.option_list import Option
 from textual.widgets.text_area import Selection
 
-from textual_autocomplete import CompletionStrategy, DropdownItem
-
 
 @dataclass
 class TargetState:
@@ -23,6 +21,11 @@ class TargetState:
 
     selection: Selection
     """The selection of the target widget."""
+
+
+CompletionStrategy = (
+    'Literal["append", "replace", "insert"] | Callable[[str, TargetState], TargetState]'
+)
 
 
 class InvalidTarget(Exception):
@@ -67,7 +70,7 @@ class DropdownItem(Option):
         self.target_state = target_state
         self.highlight_ranges = highlight_ranges
 
-        highlighted = self.main.highlight_words(
+        self.main.highlight_words(
             [target_state.text], "black on yellow", case_sensitive=False
         )
         super().__init__(self.main, id, disabled)
@@ -168,25 +171,56 @@ class AutoComplete(Widget):
         """Hijack some keypress events of the target widget."""
         # TODO - usually we only need hijack if there are results.
         if isinstance(event, events.Key):
-            highlighted = self.option_list.highlighted or 0
+            option_list = self.option_list
+            highlighted = option_list.highlighted or 0
             if event.key == "down":
                 event.prevent_default()
-                highlighted = (highlighted + 1) % self.option_list.option_count
-                self.option_list.highlighted = highlighted
+                highlighted = (highlighted + 1) % option_list.option_count
+                option_list.highlighted = highlighted
             elif event.key == "up":
                 event.prevent_default()
-                highlighted = (highlighted - 1) % self.option_list.option_count
-                self.option_list.highlighted = highlighted
+                highlighted = (highlighted - 1) % option_list.option_count
+                option_list.highlighted = highlighted
             elif event.key == "enter":
-                pass  # TODO - send content to target based on completion strategy
+                self._complete_highlighted_item()
             elif event.key == "tab":
                 # TODO - possibly also shift focus
-                pass  # TODO - send content to target based on completion strategy
+                self._complete_highlighted_item()
             elif event.key == "escape":
                 self.action_hide()
 
     def action_hide(self) -> None:
         self.styles.display = "none"
+
+    def _complete_highlighted_item(self) -> None:
+        target = self.target
+        completion_strategy = self.completion_strategy
+        option_list = self.option_list
+        highlighted = option_list.highlighted or 0
+        option = cast(DropdownItem, option_list.get_option_at_index(highlighted))
+        highlighted_value = option.main.plain
+        if isinstance(target, Input):
+            if completion_strategy == "replace":
+                target.value = ""
+                target.insert_text_at_cursor(highlighted_value)
+            elif completion_strategy == "insert":
+                target.insert_text_at_cursor(highlighted_value)
+            elif completion_strategy == "append":
+                old_value = target.value
+                new_value = old_value + highlighted_value
+                target.value = new_value
+                target.action_end()
+            else:
+                if callable(completion_strategy):
+                    new_state = completion_strategy(
+                        highlighted_value,
+                        TargetState(
+                            text=target.value,
+                            selection=Selection.cursor(0, target.cursor_position),
+                        ),
+                    )
+                    target.value = new_state.text
+                    target.cursor_position = new_state.selection.end[1]
 
     @property
     def target(self) -> Input | TextArea:
@@ -282,5 +316,5 @@ class AutoComplete(Widget):
         return matches
 
     @property
-    def option_list(self) -> OptionList:
-        return self.query_one(OptionList)
+    def option_list(self) -> AutoCompleteList:
+        return self.query_one(AutoCompleteList)

@@ -6,8 +6,8 @@ from textual_autocomplete import AutoComplete, DropdownItem
 
 class Version2(App[None]):
     def compose(self) -> ComposeResult:
-        input = TextArea()
-        # input = Input()
+        # input = TextArea()
+        input = Input()
         yield input
         yield AutoComplete(
             target=input,
