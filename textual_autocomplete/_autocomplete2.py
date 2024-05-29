@@ -32,9 +32,9 @@ class DropdownItem(Option):
     def __init__(
         self,
         main: TextType,
-        left_meta: TextType,
-        right_meta: TextType,
-        target_state: TargetState,
+        left_meta: TextType | None = None,
+        right_meta: TextType | None = None,
+        target_state: TargetState | None = None,
         highlight_ranges: Iterable[tuple[int, int]] | None = None,
         id: str | None = None,
         disabled: bool = False,
@@ -57,18 +57,25 @@ class DropdownItem(Option):
                 display in the dropdown, then you can customise the highlighting of the returned
                 candidates by supplying index ranges to highlight.
         """
-        self.main = Text(main) if isinstance(main, str) else main
-        self.left_meta = Text(left_meta) if isinstance(left_meta, str) else left_meta
+        self.main = Text(main, no_wrap=True) if isinstance(main, str) else main
+        self.left_meta = (
+            Text(left_meta, no_wrap=True) if isinstance(left_meta, str) else left_meta
+        )
         self.right_meta = (
-            Text(right_meta) if isinstance(right_meta, str) else right_meta
+            Text(right_meta, no_wrap=True)
+            if isinstance(right_meta, str)
+            else right_meta
         )
         self.target_state = target_state
         self.highlight_ranges = highlight_ranges
 
-        self.main.highlight_words(
-            [target_state.text], "black on yellow", case_sensitive=False
-        )
-        super().__init__(self.main, id, disabled)
+        prompt = self.main.copy()
+        if target_state is not None:
+            prompt.highlight_words(
+                [target_state.text], "black on yellow", case_sensitive=False
+            )
+
+        super().__init__(prompt, id, disabled)
 
 
 class AutoCompleteList(OptionList):
@@ -76,13 +83,14 @@ class AutoCompleteList(OptionList):
         """Get maximum width of options."""
         console = self.app.console
         options = console.options
-        return max(
+        max_width = max(
             (
                 Measurement.get(console, options, option.prompt).maximum
                 for option in self._options
             ),
             default=0,
         )
+        return max_width
 
 
 class AutoComplete(Widget):
@@ -156,8 +164,11 @@ class AutoComplete(Widget):
 
         await self.target._mounted_event.wait()  # TODO - timeout this wait
         self.target.message_signal.subscribe(self, self._hijack_keypress)
+        self.screen.screen_layout_refresh_signal.subscribe(
+            self, lambda event: self._align_to_target()
+        )
         self._subscribe_to_target()
-        self._handle_target_update()
+        await self._handle_target_update()
 
         # TODO - we probably need a means of checking if the screen offset
         # of the target widget has changed at all.
@@ -276,21 +287,23 @@ class AutoComplete(Widget):
             else Selection.cursor((0, target.cursor_position)),
         )
 
-    def _handle_target_update(self) -> None:
+    async def _handle_target_update(self) -> None:
         """Called when the state (text or selection) of the target is updated."""
         state = self._unify_target_state()
-        self._rebuild_options(state)
+        await self._rebuild_options(state)
         self.styles.display = "block" if self.option_list.option_count else "none"
         self._align_to_target()
 
-    def _rebuild_options(self, target_state: TargetState) -> None:
+    async def _rebuild_options(self, target_state: TargetState) -> None:
         """Rebuild the options in the dropdown."""
         option_list = self.option_list
-        option_list.clear_options()
-        matches = self._compute_matches(target_state)
-        if matches:
-            option_list.add_options(matches)
-            option_list.highlighted = 0
+
+        async with self.batch():
+            option_list.clear_options()
+            matches = self._compute_matches(target_state)
+            if matches:
+                option_list.add_options(matches)
+                option_list.highlighted = 0
 
     def _compute_matches(self, target_state: TargetState) -> list[DropdownItem]:
         """Compute the matches based on the target state."""
@@ -307,9 +320,9 @@ class AutoComplete(Widget):
                 if value.lower() in text.plain.lower():
                     matches.append(
                         DropdownItem(
-                            left_meta=item.left_meta.copy(),
-                            main=item.main.copy(),
-                            right_meta=item.right_meta.copy(),
+                            left_meta=item.left_meta,
+                            main=item.main,
+                            right_meta=item.right_meta,
                             target_state=target_state,
                         )
                     )
