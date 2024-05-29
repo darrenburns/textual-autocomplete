@@ -131,7 +131,6 @@ class AutoComplete(Widget):
             margin: 0;
             scrollbar-size-vertical: 1;
             scrollbar-size-horizontal: 0;
-            scrollbar-gutter: stable;
             &:focus {
                 border: none;
                 padding: 0;
