@@ -17,6 +17,7 @@ mypy = "^0.991"
 black = "^22.10.0"
 textual = { version = ">=0.58.1", extras = ["dev"] }
 ward = { version = "^0.67.2b0", allow-prereleases = true }
+textual-dev = "^1.5.1"
 
 [build-system]
 requires = ["poetry-core"]

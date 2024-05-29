@@ -1,11 +1,10 @@
 from textual_autocomplete._autocomplete import (
     CompletionStrategy,
     Dropdown,
-    DropdownItem,
     InputState,
 )
 
-from textual_autocomplete._autocomplete2 import AutoComplete
+from textual_autocomplete._autocomplete2 import AutoComplete, DropdownItem
 
 __all__ = [
     "AutoComplete",
