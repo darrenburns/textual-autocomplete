@@ -137,10 +137,11 @@ class AutoComplete(Widget):
                 padding: 0;
                 margin: 0;
             }
-            & > .option-list--option-highlighted {
+            & > .option-list--option-highlighted, & > .option-list--option-hover-highlighted {
                 color: $text;
-                background: $boost;
+                background: $surface-lighten-3 60%;
             }
+            
         }
 
         & .autocomplete--highlight-match {
