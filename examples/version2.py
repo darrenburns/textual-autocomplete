@@ -6,12 +6,13 @@ from textual_autocomplete import AutoComplete, DropdownItem
 
 
 class Version2(App[None]):
-    CSS = "Input { margin-top: 20; } Vertical { height: 100; }"
+    CSS = "Input {  } Vertical { height: 100; }"
 
     def compose(self) -> ComposeResult:
         # input = TextArea()
         with VerticalScroll():
             with Vertical():
+                yield Input(id="my-input")
                 yield Input()
 
     def on_mount(self) -> None:
@@ -19,7 +20,7 @@ class Version2(App[None]):
         # This might be easier to explain.
         self.screen.mount(
             AutoComplete(
-                target=self.query_one(Input),
+                target=self.query_one("#my-input", Input),
                 items=[
                     DropdownItem("Content-Type"),
                     DropdownItem("User-Agent"),
@@ -30,6 +31,7 @@ class Version2(App[None]):
                     DropdownItem("Cookie"),
                     DropdownItem("Host"),
                 ],
+                prevent_default_tab=True,
             )
         )
 

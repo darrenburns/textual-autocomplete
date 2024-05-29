@@ -132,12 +132,12 @@ class AutoComplete(Widget):
         self,
         target: Input | TextArea | str,
         items: list[DropdownItem] | Callable[[TargetState], list[DropdownItem]],
-        on_tab: Callable[[TargetState], None] | None = None,
-        on_enter: Callable[[TargetState], None] | None = None,
         completion_strategy: (
             Literal["append", "replace", "insert"]
             | Callable[[str, TargetState], TargetState]
         ) = "replace",
+        prevent_default_enter: bool = True,
+        prevent_default_tab: bool = True,
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
@@ -149,10 +149,10 @@ class AutoComplete(Widget):
         
         Must be on the same screen as """
         """The dropdown instance to use."""
-        self.on_tab = on_tab
-        self.on_enter = on_enter
         self.completion_strategy = completion_strategy
         self.items = items
+        self.prevent_default_enter = prevent_default_enter
+        self.prevent_default_tab = prevent_default_tab
         self._last_search_string = ""
         self._target_state = TargetState("", Selection.cursor((0, 0)))
 
@@ -214,9 +214,12 @@ class AutoComplete(Widget):
                 highlighted = (highlighted - 1) % option_list.option_count
                 option_list.highlighted = highlighted
             elif event.key == "enter":
+                if self.prevent_default_enter and displayed:
+                    event.prevent_default()
                 self._complete_highlighted_item()
             elif event.key == "tab":
-                # TODO - possibly also shift focus
+                if self.prevent_default_tab and displayed:
+                    event.prevent_default()
                 self._complete_highlighted_item()
             elif event.key == "escape":
                 self.action_hide()
