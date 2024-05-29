@@ -8,6 +8,7 @@ from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
 from textual.binding import Binding
+from textual.command import on
 from textual.css.query import NoMatches
 from textual.geometry import Region
 from textual.widget import Widget
@@ -230,18 +231,18 @@ class AutoComplete(Widget):
             elif event.key == "enter":
                 if self.prevent_default_enter and displayed:
                     event.prevent_default()
-                self._complete_highlighted_item()
+                self._complete(option_index=highlighted)
             elif event.key == "tab":
                 if self.prevent_default_tab and displayed:
                     event.prevent_default()
-                self._complete_highlighted_item()
+                self._complete(option_index=highlighted)
             elif event.key == "escape":
                 self.action_hide()
 
     def action_hide(self) -> None:
         self.styles.display = "none"
 
-    def _complete_highlighted_item(self) -> None:
+    def _complete(self, option_index: int) -> None:
         if not self.display:
             return
 
@@ -410,3 +411,7 @@ class AutoComplete(Widget):
     @property
     def option_list(self) -> AutoCompleteList:
         return self.query_one(AutoCompleteList)
+
+    @on(OptionList.OptionSelected, "AutoCompleteList")
+    def _apply_completion(self, event: OptionList.OptionSelected) -> None:
+        self._complete(event.option_index)
