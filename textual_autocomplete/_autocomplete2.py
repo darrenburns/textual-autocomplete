@@ -113,9 +113,13 @@ class AutoComplete(Widget):
             padding: 0;
             margin: 0;
             &:focus {
-               border: none;
+                border: none;
                 padding: 0;
                 margin: 0;
+            }
+            & > .option-list--option-highlighted {
+                color: $text;
+                background: $accent;
             }
         }
     }
@@ -170,22 +174,8 @@ class AutoComplete(Widget):
         self._subscribe_to_target()
         self._handle_target_update()
 
-        # TODO - we probably need a means of checking if the screen offset
-        # of the target widget has changed at all.
-        # self.watch(
-        #     self.screen,
-        #     attribute_name="scroll_target_x",
-        #     callback=lambda: 1,
-        # )
-        # self.watch(
-        #     self.screen,
-        #     attribute_name="scroll_target_y",
-        #     callback=lambda: 1,
-        # )
-
     def _hijack_keypress(self, event: events.Event) -> None:
         """Hijack some keypress events of the target widget."""
-        # TODO - usually we only need hijack if there are results.
 
         try:
             option_list = self.option_list
