@@ -222,6 +222,9 @@ class AutoComplete(Widget):
                     target.value = new_state.text
                     target.cursor_position = new_state.selection.end[1]
 
+        # Hide the dropdown after completion, even if there are still matches.
+        self.action_hide()
+
     @property
     def target(self) -> Input | TextArea:
         """The resolved target widget."""
