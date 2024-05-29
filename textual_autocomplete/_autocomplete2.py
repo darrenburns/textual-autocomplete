@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Iterable, Literal, cast
+from typing import Callable, ClassVar, Iterable, Literal, cast
 from rich.measure import Measurement
 from rich.text import Text, TextType
 from textual import events
@@ -112,6 +112,13 @@ class AutoComplete(Widget):
         }
     }
     """
+
+    COMPONENT_CLASSES: ClassVar[set[str]] = {
+        "autocomplete--highlight-match",
+        "autocomplete--left-column",
+        "autocomplete--main-column",
+        "autocomplete--right-column",
+    }
 
     def __init__(
         self,
