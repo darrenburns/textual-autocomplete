@@ -18,6 +18,7 @@ class Version2(App[None]):
     def on_mount(self) -> None:
         # If we mount it like this it ensures it's on the screen.
         # This might be easier to explain.
+        # OR we could provide a utility function that does this for us.
         self.screen.mount(
             AutoComplete(
                 target=self.query_one("#my-input", Input),
