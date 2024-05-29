@@ -99,6 +99,7 @@ class AutoComplete(Widget):
     DEFAULT_CSS = """\
     AutoComplete {
         layer: textual-autocomplete;
+        dock: top;  /* if we dont dock, it appears behind docked widgets */
         height: auto;
         width: auto;
         max-height: 12;
@@ -162,10 +163,9 @@ class AutoComplete(Widget):
 
     def on_mount(self) -> None:
         # Subscribe to the target widget's reactive attributes.
-
         self.target.message_signal.subscribe(self, self._hijack_keypress)
         self.screen.screen_layout_refresh_signal.subscribe(
-            self, lambda event: self._align_to_target()
+            self, lambda _event: self._align_to_target()
         )
         self._subscribe_to_target()
         self._handle_target_update()
@@ -282,8 +282,6 @@ class AutoComplete(Widget):
 
     def _align_to_target(self) -> None:
         cursor_x, cursor_y = self.target.cursor_screen_offset
-        if (cursor_x, cursor_y) == (0, 0):
-            cursor_x, cursor_y = self.target.content_region.offset
 
         dropdown = self.query_one(OptionList)
         width, height = dropdown.size
@@ -320,6 +318,7 @@ class AutoComplete(Widget):
             self.styles.display = "block" if self.option_list.option_count else "none"
 
         self._last_search_string = search_string
+        print(f"num option = {self.option_list.option_count}")
 
     def _rebuild_options(self, target_state: TargetState) -> None:
         """Rebuild the options in the dropdown."""
