@@ -7,6 +7,7 @@ from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
 from textual.binding import Binding
+from textual.css.query import NoMatches
 from textual.geometry import Region
 from textual.widget import Widget
 from textual.widgets import Input, TextArea, OptionList
@@ -34,7 +35,7 @@ class DropdownItem(Option):
         main: TextType,
         left_meta: TextType | None = None,
         right_meta: TextType | None = None,
-        target_state: TargetState | None = None,
+        search_string: str = "",
         highlight_ranges: Iterable[tuple[int, int]] | None = None,
         id: str | None = None,
         disabled: bool = False,
@@ -66,14 +67,11 @@ class DropdownItem(Option):
             if isinstance(right_meta, str)
             else right_meta
         )
-        self.target_state = target_state
+        self.search_string = search_string
         self.highlight_ranges = highlight_ranges
 
         prompt = self.main.copy()
-        if target_state is not None:
-            prompt.highlight_words(
-                [target_state.text], "black on yellow", case_sensitive=False
-            )
+        prompt.highlight_words([search_string], "black on yellow", case_sensitive=False)
 
         super().__init__(prompt, id, disabled)
 
@@ -105,6 +103,7 @@ class AutoComplete(Widget):
         width: auto;
         max-height: 12;
         scrollbar-size-vertical: 1;
+        display: none;
 
         & AutoCompleteList {
             width: auto;
@@ -153,22 +152,23 @@ class AutoComplete(Widget):
         self.on_enter = on_enter
         self.completion_strategy = completion_strategy
         self.items = items
+        self._last_search_string = ""
+        self._target_state = TargetState("", Selection.cursor((0, 0)))
 
     def compose(self) -> ComposeResult:
         option_list = AutoCompleteList()
         option_list.can_focus = False
         yield option_list
 
-    async def on_mount(self) -> None:
+    def on_mount(self) -> None:
         # Subscribe to the target widget's reactive attributes.
 
-        await self.target._mounted_event.wait()  # TODO - timeout this wait
         self.target.message_signal.subscribe(self, self._hijack_keypress)
         self.screen.screen_layout_refresh_signal.subscribe(
             self, lambda event: self._align_to_target()
         )
         self._subscribe_to_target()
-        await self._handle_target_update()
+        self._handle_target_update()
 
         # TODO - we probably need a means of checking if the screen offset
         # of the target widget has changed at all.
@@ -186,13 +186,29 @@ class AutoComplete(Widget):
     def _hijack_keypress(self, event: events.Event) -> None:
         """Hijack some keypress events of the target widget."""
         # TODO - usually we only need hijack if there are results.
-        if isinstance(event, events.Key):
+
+        try:
             option_list = self.option_list
+        except NoMatches:
+            # This can happen if the event is an Unmount event
+            # during application shutdown.
+            return
+
+        if isinstance(event, events.Key) and option_list.option_count:
+            displayed = self.display
             highlighted = option_list.highlighted or 0
             if event.key == "down":
                 event.prevent_default()
-                highlighted = (highlighted + 1) % option_list.option_count
+                # If you press `down` while in an Input and the autocomplete is currently
+                # hidden, then we should show the dropdown.
+                if isinstance(self.target, Input):
+                    if not displayed:
+                        self.display = True
+                        highlighted = 0
+                    else:
+                        highlighted = (highlighted + 1) % option_list.option_count
                 option_list.highlighted = highlighted
+
             elif event.key == "up":
                 event.prevent_default()
                 highlighted = (highlighted - 1) % option_list.option_count
@@ -209,6 +225,9 @@ class AutoComplete(Widget):
         self.styles.display = "none"
 
     def _complete_highlighted_item(self) -> None:
+        if not self.display:
+            return
+
         target = self.target
         completion_strategy = self.completion_strategy
         option_list = self.option_list
@@ -277,7 +296,7 @@ class AutoComplete(Widget):
 
         self.styles.offset = x, y
 
-    def _unify_target_state(self) -> TargetState:
+    def _get_target_state(self) -> TargetState:
         target = self.target
         is_text_area = isinstance(target, TextArea)
         return TargetState(
@@ -287,52 +306,83 @@ class AutoComplete(Widget):
             else Selection.cursor((0, target.cursor_position)),
         )
 
-    async def _handle_target_update(self) -> None:
+    def _handle_target_update(self) -> None:
         """Called when the state (text or selection) of the target is updated."""
-        state = self._unify_target_state()
-        await self._rebuild_options(state)
-        self.styles.display = "block" if self.option_list.option_count else "none"
+        search_string = self.search_string
+
+        self._target_state = self._get_target_state()
+        self._rebuild_options(self._target_state)
         self._align_to_target()
 
-    async def _rebuild_options(self, target_state: TargetState) -> None:
+        if len(search_string) == 0:
+            self.styles.display = "none"
+        elif len(search_string) > len(self._last_search_string):
+            self.styles.display = "block" if self.option_list.option_count else "none"
+
+        self._last_search_string = search_string
+
+    def _rebuild_options(self, target_state: TargetState) -> None:
         """Rebuild the options in the dropdown."""
         option_list = self.option_list
 
-        async with self.batch():
-            option_list.clear_options()
-            matches = self._compute_matches(target_state)
-            if matches:
-                option_list.add_options(matches)
-                option_list.highlighted = 0
+        option_list.clear_options()
+        matches = self._compute_matches(target_state)
+        if matches:
+            option_list.add_options(matches)
+            option_list.highlighted = 0
+
+    @property
+    def search_string(self) -> str:
+        """The string that is being used to query the dropdown.
+
+        This may be the text in the target widget, or a substring of that text.
+        """
+        target = self.target
+        if isinstance(target, Input):
+            return target.value
+        else:
+            row, col = target.cursor_location
+            line = target.document.get_line(row)
+
+            for index in range(col, -1, -1):
+                if not line[index].isalnum():
+                    query_string = line[index + 1 : col + 1]
+                    return query_string
+
+            return ""
 
     def _compute_matches(self, target_state: TargetState) -> list[DropdownItem]:
         """Compute the matches based on the target state."""
         items = self.items
-        if callable(items):
-            # Pass the target state to the callable.
-            matches = items(target_state)
-        else:
-            matches: list[DropdownItem] = []
-            assert isinstance(items, list)
-            value = target_state.text
-            for item in items:
-                text = item.main
-                if value.lower() in text.plain.lower():
-                    matches.append(
-                        DropdownItem(
-                            left_meta=item.left_meta,
-                            main=item.main,
-                            right_meta=item.right_meta,
-                            target_state=target_state,
-                        )
-                    )
+        matcher = items if callable(items) else self.matcher
+        matches = matcher(target_state)
+        return matches
 
-            matches = sorted(
-                matches,
-                key=lambda match: not match.main.plain.lower().startswith(
-                    value.lower()
-                ),
-            )
+    def matcher(self, target_state: TargetState) -> list[DropdownItem]:
+        """Given the state of the target widget, return the DropdownItems
+        which match the query string and should be appear in the dropdown."""
+        items = self.items
+        matches: list[DropdownItem] = []
+        assert isinstance(items, list)
+        value = target_state.text
+        search_string = self.search_string
+        print(f"search_string: {search_string!r}")
+        for item in items:
+            text = item.main
+            if value.lower() in text.plain.lower():
+                matches.append(
+                    DropdownItem(
+                        left_meta=item.left_meta,
+                        main=item.main,
+                        right_meta=item.right_meta,
+                        search_string=search_string,
+                    )
+                )
+
+        matches = sorted(
+            matches,
+            key=lambda match: not match.main.plain.lower().startswith(value.lower()),
+        )
 
         return matches
 
