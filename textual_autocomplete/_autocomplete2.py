@@ -23,11 +23,6 @@ class TargetState:
     """The selection of the target widget."""
 
 
-CompletionStrategy = (
-    'Literal["append", "replace", "insert"] | Callable[[str, TargetState], TargetState]'
-)
-
-
 class InvalidTarget(Exception):
     """Raised if the target is invalid, i.e. not something which can
     be autocompleted."""
@@ -124,7 +119,10 @@ class AutoComplete(Widget):
         items: list[DropdownItem] | Callable[[TargetState], list[DropdownItem]],
         on_tab: Callable[[TargetState], None] | None = None,
         on_enter: Callable[[TargetState], None] | None = None,
-        completion_strategy: CompletionStrategy = "replace",
+        completion_strategy: (
+            Literal["append", "replace", "insert"]
+            | Callable[[str, TargetState], TargetState]
+        ) = "replace",
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
