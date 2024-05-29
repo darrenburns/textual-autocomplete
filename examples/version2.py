@@ -31,8 +31,17 @@ class Version2(App[None]):
                     DropdownItem("Authorization"),
                     DropdownItem("Cookie"),
                     DropdownItem("Host"),
+                    DropdownItem("Connection"),
+                    DropdownItem("Referrer"),
+                    DropdownItem("Referrer-Policy"),
+                    DropdownItem("Sec-Fetch-Dest"),
+                    DropdownItem("Sec-Fetch-Mode"),
+                    DropdownItem("Origin"),
+                    DropdownItem("Pragma"),
+                    DropdownItem("Expect"),
+                    DropdownItem("Upgrade-Insecure-Requests"),
                 ],
-                prevent_default_tab=True,
+                prevent_default_tab=False,
             )
         )
 

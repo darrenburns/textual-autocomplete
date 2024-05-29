@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, ClassVar, Iterable, Literal, cast
 from rich.measure import Measurement
+from rich.style import Style, StyleType
 from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
@@ -37,6 +38,7 @@ class DropdownItem(Option):
         right_meta: TextType | None = None,
         search_string: str = "",
         highlight_ranges: Iterable[tuple[int, int]] | None = None,
+        highlight_style: StyleType | None = None,
         id: str | None = None,
         disabled: bool = False,
     ) -> None:
@@ -69,10 +71,25 @@ class DropdownItem(Option):
         )
         self.search_string = search_string
         self.highlight_ranges = highlight_ranges
+        self.highlight_style = highlight_style
 
         prompt = self.main.copy()
-        prompt.highlight_words([search_string], "black on yellow", case_sensitive=False)
+        if self.search_string and highlight_style:
+            highlight_style = (
+                Style.parse(highlight_style)
+                if isinstance(highlight_style, str)
+                else highlight_style
+            )
+            if self.highlight_ranges:
+                for highlight in self.highlight_ranges:
+                    prompt.stylize(highlight_style, *highlight)
+            else:
+                prompt.highlight_words(
+                    [search_string], highlight_style, case_sensitive=False
+                )
 
+        # TODO - this is a hack to work around what appears to be an issue in Textual.
+        prompt += " "
         super().__init__(prompt, id, disabled)
 
 
@@ -86,7 +103,7 @@ class AutoCompleteList(OptionList):
                 Measurement.get(console, options, option.prompt).maximum
                 for option in self._options
             ),
-            default=0,
+            default=4,
         )
         return max_width
 
@@ -103,8 +120,8 @@ class AutoComplete(Widget):
         height: auto;
         width: auto;
         max-height: 12;
-        scrollbar-size-vertical: 1;
         display: none;
+        background: $surface-lighten-1;
 
         & AutoCompleteList {
             width: auto;
@@ -112,6 +129,9 @@ class AutoComplete(Widget):
             border: none;
             padding: 0;
             margin: 0;
+            scrollbar-size-vertical: 1;
+            scrollbar-size-horizontal: 0;
+            scrollbar-gutter: stable;
             &:focus {
                 border: none;
                 padding: 0;
@@ -119,8 +139,13 @@ class AutoComplete(Widget):
             }
             & > .option-list--option-highlighted {
                 color: $text;
-                background: $accent;
+                background: $boost;
             }
+        }
+
+        & .autocomplete--highlight-match {
+            color: $text;
+            background: $primary-lighten-1;
         }
     }
     """
@@ -359,6 +384,7 @@ class AutoComplete(Widget):
         value = target_state.text
         search_string = self.search_string
         print(f"search_string: {search_string!r}")
+        highlight_style = self.get_component_rich_style("autocomplete--highlight-match")
         for item in items:
             text = item.main
             if value.lower() in text.plain.lower():
@@ -368,6 +394,10 @@ class AutoComplete(Widget):
                         main=item.main,
                         right_meta=item.right_meta,
                         search_string=search_string,
+                        highlight_ranges=item.highlight_ranges,
+                        highlight_style=highlight_style
+                        if item.highlight_style is None
+                        else item.highlight_style,
                     )
                 )
 
