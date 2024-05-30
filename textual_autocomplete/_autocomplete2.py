@@ -303,6 +303,8 @@ class AutoComplete(Widget):
             self.watch(target, "text", self._handle_target_update)
             self.watch(target, "selection", self._handle_target_update)
 
+        self.watch(target, "has_focus", self._handle_focus_change)
+
     def _align_to_target(self) -> None:
         cursor_x, cursor_y = self.target.cursor_screen_offset
 
@@ -326,6 +328,11 @@ class AutoComplete(Widget):
             if is_text_area
             else Selection.cursor((0, target.cursor_position)),
         )
+
+    def _handle_focus_change(self, has_focus: bool) -> None:
+        """Called when the focus of the target widget changes."""
+        if not has_focus:
+            self.action_hide()
 
     def _handle_target_update(self) -> None:
         """Called when the state (text or selection) of the target is updated."""
@@ -395,7 +402,7 @@ class AutoComplete(Widget):
                     DropdownItem(
                         left_meta=item.left_meta,
                         main=item.main,
-                        popup=item.popup,
+                        # popup=item.popup,
                         search_string=search_string,
                         highlight_ranges=item.highlight_ranges,
                         highlight_style=highlight_style
