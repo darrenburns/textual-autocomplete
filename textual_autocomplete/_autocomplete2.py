@@ -90,7 +90,6 @@ class DropdownItem(Option):
                 )
 
         # TODO - this is a hack to work around what appears to be an issue in Textual.
-        prompt += " "
         super().__init__(prompt, id, disabled)
 
 
@@ -104,8 +103,9 @@ class AutoCompleteList(OptionList):
                 Measurement.get(console, options, option.prompt).maximum
                 for option in self._options
             ),
-            default=4,
+            default=1,
         )
+        max_width += self.scrollbar_size_vertical
         return max_width
 
 
@@ -187,7 +187,7 @@ class AutoComplete(Widget):
         self._target_state = TargetState("", Selection.cursor((0, 0)))
 
     def compose(self) -> ComposeResult:
-        option_list = AutoCompleteList()
+        option_list = AutoCompleteList(wrap=False)
         option_list.can_focus = False
         yield option_list
 
