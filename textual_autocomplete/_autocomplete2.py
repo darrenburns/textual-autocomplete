@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable, ClassVar, Iterable, Literal, cast
+from rich.align import Align
 from rich.measure import Measurement
 from rich.style import Style, StyleType
 from rich.text import Text, TextType
@@ -36,7 +37,7 @@ class DropdownItem(Option):
         self,
         main: TextType,
         left_meta: TextType | None = None,
-        right_meta: TextType | None = None,
+        # popup: TextType | None = None,
         search_string: str = "",
         highlight_ranges: Iterable[tuple[int, int]] | None = None,
         highlight_style: StyleType | None = None,
@@ -63,13 +64,13 @@ class DropdownItem(Option):
         """
         self.main = Text(main, no_wrap=True) if isinstance(main, str) else main
         self.left_meta = (
-            Text(left_meta, no_wrap=True) if isinstance(left_meta, str) else left_meta
+            Text(left_meta, no_wrap=True, style="dim")
+            if isinstance(left_meta, str)
+            else left_meta
         )
-        self.right_meta = (
-            Text(right_meta, no_wrap=True)
-            if isinstance(right_meta, str)
-            else right_meta
-        )
+        # self.popup = (
+        #     Text(popup, no_wrap=True, style="dim") if isinstance(popup, str) else popup
+        # )
         self.search_string = search_string
         self.highlight_ranges = highlight_ranges
         self.highlight_style = highlight_style
@@ -89,7 +90,10 @@ class DropdownItem(Option):
                     [search_string], highlight_style, case_sensitive=False
                 )
 
-        # TODO - this is a hack to work around what appears to be an issue in Textual.
+        left = self.left_meta
+        if left:
+            prompt = Text.assemble(left, " ", prompt)
+
         super().__init__(prompt, id, disabled)
 
 
@@ -337,7 +341,6 @@ class AutoComplete(Widget):
             self.styles.display = "block" if self.option_list.option_count else "none"
 
         self._last_search_string = search_string
-        print(f"num option = {self.option_list.option_count}")
 
     def _rebuild_options(self, target_state: TargetState) -> None:
         """Rebuild the options in the dropdown."""
@@ -384,7 +387,6 @@ class AutoComplete(Widget):
         assert isinstance(items, list)
         value = target_state.text
         search_string = self.search_string
-        print(f"search_string: {search_string!r}")
         highlight_style = self.get_component_rich_style("autocomplete--highlight-match")
         for item in items:
             text = item.main
@@ -393,7 +395,7 @@ class AutoComplete(Widget):
                     DropdownItem(
                         left_meta=item.left_meta,
                         main=item.main,
-                        right_meta=item.right_meta,
+                        popup=item.popup,
                         search_string=search_string,
                         highlight_ranges=item.highlight_ranges,
                         highlight_style=highlight_style
