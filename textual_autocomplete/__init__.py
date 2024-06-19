@@ -11,6 +11,8 @@ from textual_autocomplete._autocomplete2 import (
     InvalidTarget,
 )
 
+from textual_autocomplete.matcher import Matcher
+
 __all__ = [
     "AutoComplete",
     "CompletionStrategy",
@@ -19,4 +21,5 @@ __all__ = [
     "InputState",
     "TargetState",
     "InvalidTarget",
+    "Matcher",
 ]
