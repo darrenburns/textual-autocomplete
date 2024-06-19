@@ -4,7 +4,12 @@ from textual_autocomplete._autocomplete import (
     InputState,
 )
 
-from textual_autocomplete._autocomplete2 import AutoComplete, DropdownItem
+from textual_autocomplete._autocomplete2 import (
+    AutoComplete,
+    DropdownItem,
+    TargetState,
+    InvalidTarget,
+)
 
 __all__ = [
     "AutoComplete",
@@ -12,4 +17,6 @@ __all__ = [
     "Dropdown",
     "DropdownItem",
     "InputState",
+    "TargetState",
+    "InvalidTarget",
 ]

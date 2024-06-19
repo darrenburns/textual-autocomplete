@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, ClassVar, Iterable, Literal, cast
-from rich.align import Align
+from operator import itemgetter
+from typing import Callable, ClassVar, Literal, Optional, cast
 from rich.measure import Measurement
-from rich.style import Style, StyleType
+from rich.style import Style
 from rich.text import Text, TextType
 from textual import events
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.command import on
 from textual.css.query import NoMatches
+from textual_autocomplete.matcher import Matcher
 from textual.geometry import Region
 from textual.widget import Widget
 from textual.widgets import Input, TextArea, OptionList
@@ -38,9 +39,6 @@ class DropdownItem(Option):
         main: TextType,
         left_meta: TextType | None = None,
         # popup: TextType | None = None,
-        search_string: str = "",
-        highlight_ranges: Iterable[tuple[int, int]] | None = None,
-        highlight_style: StyleType | None = None,
         id: str | None = None,
         disabled: bool = False,
     ) -> None:
@@ -52,8 +50,7 @@ class DropdownItem(Option):
                 column contains the text that represents this option.
             main: The main text representing this option - this will be highlighted by default.
                 In an IDE, the `main` (middle) column might contain the name of a function or method.
-            right: The text appearing in the right column of the dropdown.
-                The right column often contains some metadata relating to this option.
+            search_string: The string that is being used for matching.
             highlight_ranges: Custom ranges to highlight. By default, the value is None,
                 meaning textual-autocomplete will highlight substrings in the dropdown.
                 That is, if the value you've typed into the Input is a substring of the candidates
@@ -71,28 +68,10 @@ class DropdownItem(Option):
         # self.popup = (
         #     Text(popup, no_wrap=True, style="dim") if isinstance(popup, str) else popup
         # )
-        self.search_string = search_string
-        self.highlight_ranges = highlight_ranges
-        self.highlight_style = highlight_style
-
-        prompt = self.main.copy()
-        if self.search_string and highlight_style:
-            highlight_style = (
-                Style.parse(highlight_style)
-                if isinstance(highlight_style, str)
-                else highlight_style
-            )
-            if self.highlight_ranges:
-                for highlight in self.highlight_ranges:
-                    prompt.stylize(highlight_style, *highlight)
-            else:
-                prompt.highlight_words(
-                    [search_string], highlight_style, case_sensitive=False
-                )
-
         left = self.left_meta
+        prompt = self.main
         if left:
-            prompt = Text.assemble(left, " ", prompt)
+            prompt = Text.assemble(left, " ", self.main)
 
         super().__init__(prompt, id, disabled)
 
@@ -111,6 +90,9 @@ class AutoCompleteList(OptionList):
         )
         max_width += self.scrollbar_size_vertical
         return max_width
+
+
+MatcherFactoryType = Callable[[str, Optional[Style], bool], Matcher]
 
 
 class AutoComplete(Widget):
@@ -157,15 +139,13 @@ class AutoComplete(Widget):
 
     COMPONENT_CLASSES: ClassVar[set[str]] = {
         "autocomplete--highlight-match",
-        "autocomplete--left-column",
-        "autocomplete--main-column",
-        "autocomplete--right-column",
     }
 
     def __init__(
         self,
         target: Input | TextArea | str,
         items: list[DropdownItem] | Callable[[TargetState], list[DropdownItem]],
+        matcher_factory: MatcherFactoryType | None = None,
         completion_strategy: (
             Literal["append", "replace", "insert"]
             | Callable[[str, TargetState], TargetState]
@@ -181,13 +161,30 @@ class AutoComplete(Widget):
         self._target = target
         """An Input instance, TextArea instance, or a selector string used to query an Input/TextArea instance.
         
-        Must be on the same screen as """
-        """The dropdown instance to use."""
+        Must be on the same screen as the dropdown instance."""
+
         self.completion_strategy = completion_strategy
+        """The strategy that should be use to do the completion.
+        
+        You can pass a string literal to use one of the built-in strategies, or a function
+        which takes the highlighted value in the dropdown and the current state of the target widget 
+        and returns what the new state of the target widget should be after the completion has been applied.
+        """
+
         self.items = items
+        """The items to match on, or a function which returns the items to match on."""
+
+        self.matcher_factory = Matcher if matcher_factory is None else matcher_factory
+        """A factory function that returns the Matcher to use for matching and highlighting."""
+
         self.prevent_default_enter = prevent_default_enter
+        """Prevent the default enter behaviour."""
+
         self.prevent_default_tab = prevent_default_tab
+        """Prevent the default tab behaviour."""
+
         self._last_search_string = ""
+
         self._target_state = TargetState("", Selection.cursor((0, 0)))
 
     def compose(self) -> ComposeResult:
@@ -197,9 +194,10 @@ class AutoComplete(Widget):
 
     def on_mount(self) -> None:
         # Subscribe to the target widget's reactive attributes.
-        self.target.message_signal.subscribe(self, self._hijack_keypress)
-        self.screen.screen_layout_refresh_signal.subscribe(
-            self, lambda _event: self._align_to_target()
+        self.target.message_signal.subscribe(self, self._hijack_keypress)  # type: ignore
+        self.screen.screen_layout_refresh_signal.subscribe(  # type: ignore
+            self,
+            lambda _event: self._align_to_target(),  # type: ignore
         )
         self._subscribe_to_target()
         self._handle_target_update()
@@ -248,13 +246,17 @@ class AutoComplete(Widget):
         self.styles.display = "none"
 
     def _complete(self, option_index: int) -> None:
+        """Do the completion (i.e. insert the selected item into the target input/textarea).
+
+        This is when the user highlights an option in the dropdown and presses tab or enter.
+        """
         if not self.display:
             return
 
         target = self.target
         completion_strategy = self.completion_strategy
         option_list = self.option_list
-        highlighted = option_list.highlighted or 0
+        highlighted = option_index
         option = cast(DropdownItem, option_list.get_option_at_index(highlighted))
         highlighted_value = option.main.plain
         if isinstance(target, Input):
@@ -272,10 +274,7 @@ class AutoComplete(Widget):
                 if callable(completion_strategy):
                     new_state = completion_strategy(
                         highlighted_value,
-                        TargetState(
-                            text=target.value,
-                            selection=Selection.cursor(0, target.cursor_position),
-                        ),
+                        self._get_target_state(),
                     )
                     target.value = new_state.text
                     target.cursor_position = new_state.selection.end[1]
@@ -320,14 +319,18 @@ class AutoComplete(Widget):
         self.styles.offset = x, y
 
     def _get_target_state(self) -> TargetState:
+        """Get the state of the target widget."""
         target = self.target
-        is_text_area = isinstance(target, TextArea)
-        return TargetState(
-            text=target.text if is_text_area else target.value,
-            selection=target.selection
-            if is_text_area
-            else Selection.cursor((0, target.cursor_position)),
-        )
+        if isinstance(target, Input):
+            return TargetState(
+                text=target.value,
+                selection=Selection.cursor((0, target.cursor_position)),  # type: ignore
+            )
+        else:
+            return TargetState(
+                text=target.text,
+                selection=target.selection,
+            )
 
     def _handle_focus_change(self, has_focus: bool) -> None:
         """Called when the focus of the target widget changes."""
@@ -336,8 +339,7 @@ class AutoComplete(Widget):
 
     def _handle_target_update(self) -> None:
         """Called when the state (text or selection) of the target is updated."""
-        search_string = self.search_string
-
+        search_string = self.get_search_string()
         self._target_state = self._get_target_state()
         self._rebuild_options(self._target_state)
         self._align_to_target()
@@ -350,7 +352,11 @@ class AutoComplete(Widget):
         self._last_search_string = search_string
 
     def _rebuild_options(self, target_state: TargetState) -> None:
-        """Rebuild the options in the dropdown."""
+        """Rebuild the options in the dropdown.
+
+        Args:
+            target_state: The state of the target widget.
+        """
         option_list = self.option_list
 
         option_list.clear_options()
@@ -359,11 +365,20 @@ class AutoComplete(Widget):
             option_list.add_options(matches)
             option_list.highlighted = 0
 
-    @property
-    def search_string(self) -> str:
-        """The string that is being used to query the dropdown.
+    def get_search_string(self) -> str:
+        """This value will be passed to the matcher.
 
-        This may be the text in the target widget, or a substring of that text.
+        This could be, for example, the text in the target widget, or a substring of that text.
+
+        For Input widgets the default is to use the text in the input, and for TextArea widgets
+        the default is to use the text in the TextArea before the cursor up to the most recent
+        non-alphanumeric character.
+
+        Subclassing AutoComplete to create a custom `get_search_string` method is a way to
+        customise the behaviour of the autocomplete dropdown.
+
+        Returns:
+            The search string that will be used to filter the dropdown options.
         """
         target = self.target
         if isinstance(target, Input):
@@ -372,7 +387,7 @@ class AutoComplete(Widget):
             row, col = target.cursor_location
             line = target.document.get_line(row)
 
-            for index in range(col, -1, -1):
+            for index in range(col, 0, -1):
                 if not line[index].isalnum():
                     query_string = line[index + 1 : col + 1]
                     return query_string
@@ -380,42 +395,60 @@ class AutoComplete(Widget):
             return ""
 
     def _compute_matches(self, target_state: TargetState) -> list[DropdownItem]:
-        """Compute the matches based on the target state."""
-        items = self.items
-        matcher = items if callable(items) else self.matcher
-        matches = matcher(target_state)
-        return matches
+        """Compute the matches based on the target state.
 
-    def matcher(self, target_state: TargetState) -> list[DropdownItem]:
+        Args:
+            target_state: The state of the target widget.
+
+        Returns:
+            The matches to display in the dropdown.
+        """
+
+        # If items is a callable, then it's a factory function that returns the candidates.
+        # Otherwise, it's a list of candidates.
+        items = self.items
+        candidates = items(target_state) if callable(items) else items
+        return self.get_matches(target_state, candidates)
+
+    def get_matches(
+        self, target_state: TargetState, candidates: list[DropdownItem]
+    ) -> list[DropdownItem]:
         """Given the state of the target widget, return the DropdownItems
-        which match the query string and should be appear in the dropdown."""
-        items = self.items
-        matches: list[DropdownItem] = []
-        assert isinstance(items, list)
-        value = target_state.text
-        search_string = self.search_string
-        highlight_style = self.get_component_rich_style("autocomplete--highlight-match")
-        for item in items:
-            text = item.main
-            if value.lower() in text.plain.lower():
-                matches.append(
-                    DropdownItem(
-                        left_meta=item.left_meta,
-                        main=item.main,
-                        # popup=item.popup,
-                        search_string=search_string,
-                        highlight_ranges=item.highlight_ranges,
-                        highlight_style=highlight_style
-                        if item.highlight_style is None
-                        else item.highlight_style,
-                    )
+        which match the query string and should be appear in the dropdown.
+
+        Args:
+            target_state: The state of the target widget.
+            candidates: The candidates to match against.
+
+        Returns:
+            The matches to display in the dropdown.
+        """
+        search_string = self.get_search_string()
+        if not search_string:
+            return candidates
+
+        match_style = self.get_component_rich_style("autocomplete--highlight-match")
+        matcher = self.matcher_factory(search_string, match_style, False)
+
+        matches_and_scores: list[tuple[DropdownItem, float]] = []
+        append_score = matches_and_scores.append
+        get_score = matcher.match
+        get_highlighted = matcher.highlight
+
+        for candidate in candidates:
+            candidate_string = candidate.main.plain
+            if (score := get_score(candidate_string)) > 0:
+                highlighted_text = get_highlighted(candidate_string)
+                highlighted_item = DropdownItem(
+                    main=highlighted_text,
+                    left_meta=candidate.left_meta,
+                    id=candidate.id,
+                    disabled=candidate.disabled,
                 )
+                append_score((highlighted_item, score))
 
-        matches = sorted(
-            matches,
-            key=lambda match: not match.main.plain.lower().startswith(value.lower()),
-        )
-
+        matches_and_scores.sort(key=itemgetter(1), reverse=True)
+        matches = [match for match, _ in matches_and_scores]
         return matches
 
     @property
