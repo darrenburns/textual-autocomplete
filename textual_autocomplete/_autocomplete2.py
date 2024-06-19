@@ -336,6 +336,8 @@ class AutoComplete(Widget):
         """Called when the focus of the target widget changes."""
         if not has_focus:
             self.action_hide()
+        else:
+            self._rebuild_options(self._target_state)
 
     def _handle_target_update(self) -> None:
         """Called when the state (text or selection) of the target is updated."""
