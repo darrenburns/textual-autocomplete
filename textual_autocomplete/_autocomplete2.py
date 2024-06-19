@@ -358,12 +358,12 @@ class AutoComplete(Widget):
             target_state: The state of the target widget.
         """
         option_list = self.option_list
-
         option_list.clear_options()
-        matches = self._compute_matches(target_state)
-        if matches:
-            option_list.add_options(matches)
-            option_list.highlighted = 0
+        if self.target.has_focus:
+            matches = self._compute_matches(target_state)
+            if matches:
+                option_list.add_options(matches)
+                option_list.highlighted = 0
 
     def get_search_string(self) -> str:
         """This value will be passed to the matcher.

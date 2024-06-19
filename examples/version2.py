@@ -1,6 +1,7 @@
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.containers import Vertical, VerticalScroll
-from textual.widgets import Input, TextArea
+from textual.widgets import Footer, Input, TextArea
 
 from textual_autocomplete import AutoComplete, DropdownItem
 
@@ -778,12 +779,17 @@ REQUEST_HEADERS = [
 class Version2(App[None]):
     CSS = "Input {  } Vertical { height: 100; }"
 
+    BINDINGS = [
+        Binding("ctrl+n", "insert_matching_text", "Insert matching text"),
+    ]
+
     def compose(self) -> ComposeResult:
         # input = TextArea()
         with VerticalScroll():
             with Vertical():
                 yield Input(id="my-input")
                 yield Input()
+        yield Footer()
 
     def on_mount(self) -> None:
         # If we mount it like this it ensures it's on the screen.
@@ -802,6 +808,9 @@ class Version2(App[None]):
                 prevent_default_tab=False,
             )
         )
+
+    def action_insert_matching_text(self) -> None:
+        self.query_one("#my-input", Input).value = "Authorization"
 
 
 if __name__ == "__main__":
