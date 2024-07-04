@@ -228,9 +228,10 @@ class AutoComplete(Widget):
                 option_list.highlighted = highlighted
 
             elif event.key == "up":
-                event.prevent_default()
-                highlighted = (highlighted - 1) % option_list.option_count
-                option_list.highlighted = highlighted
+                if displayed:
+                    event.prevent_default()
+                    highlighted = (highlighted - 1) % option_list.option_count
+                    option_list.highlighted = highlighted
             elif event.key == "enter":
                 if self.prevent_default_enter and displayed:
                     event.prevent_default()
