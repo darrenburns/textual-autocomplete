@@ -304,6 +304,7 @@ class AutoComplete(Widget):
         # was a completion. This is so that when the target posts a Changed message
         # as a result of this completion, we can opt to ignore it in `handle_target_updated`
         self._last_action_was_completion = True
+        self.action_hide()
 
     @property
     def target(self) -> Input | TextArea:
