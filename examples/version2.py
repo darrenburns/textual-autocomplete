@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 import os
+from typing import Callable, Literal
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical, VerticalScroll
-from textual.widgets import Footer, Input
+from textual.widgets import Footer, Input, TextArea
 from textual.widgets.text_area import Selection
 
 from textual_autocomplete import (
     AutoComplete,
     DropdownItem,
+    MatcherFactoryType,
     TargetState,
 )
 
@@ -785,54 +787,35 @@ REQUEST_HEADERS = [
 ]
 
 
-class Version2(App[None]):
-    CSS = "Vertical { height: 100; }"
-
-    BINDINGS = [
-        Binding("ctrl+n", "insert_matching_text", "Insert matching text"),
-    ]
-
-    def compose(self) -> ComposeResult:
-        # input = TextArea()
-        with VerticalScroll():
-            with Vertical():
-                input_one = Input(id="my-input")
-                input_one.focus()
-                yield input_one
-                yield Input()
-        yield Footer()
-
-    def on_mount(self) -> None:
-        # If we mount it like this it ensures it's on the screen.
-        # This might be easier to explain.
-        # OR we could provide a utility function that does this for us.
-
-        items: list[DropdownItem] = []
-        for header in REQUEST_HEADERS:
-            style = "yellow" if header["experimental"] else ""
-            items.append(DropdownItem(Text(header["name"], style=style)))
-
-        self.screen.mount(
-            AutoComplete(
-                target=self.query_one("#my-input", Input),
-                candidates=self.get_candidates,
-                completion_strategy=self._completion_strategy,
-                search_string=self._search_string,
-            )
+class VariableAutoComplete(AutoComplete):
+    def __init__(
+        self,
+        target: Input | TextArea | str,
+        candidates: list[DropdownItem] | Callable[[TargetState], list[DropdownItem]],
+        variable_candidates: list[DropdownItem]
+        | Callable[[TargetState], list[DropdownItem]],
+        matcher_factory: MatcherFactoryType | None = None,
+        prevent_default_enter: bool = True,
+        prevent_default_tab: bool = True,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+        disabled: bool = False,
+    ) -> None:
+        super().__init__(
+            target,
+            candidates,
+            matcher_factory,
+            self._completion_strategy,
+            self._search_string,
+            prevent_default_enter,
+            prevent_default_tab,
+            name,
+            id,
+            classes,
+            disabled,
         )
-
-    def get_candidates(self, target_state: TargetState) -> list[DropdownItem]:
-        if self.is_cursor_within_variable(target_state):
-            # TODO: In Posting, we need to only fetch the available vars
-            # depending on the use_host_environment setting.
-            vars = os.environ.keys()
-            candidates = [DropdownItem(main=f"$env:{var}") for var in vars]
-            print("cursor within variable")
-        else:
-            candidates = [DropdownItem(main=header) for header in request_header_names]
-            print("cursor not within variable")
-        print([candidate.main.plain for candidate in candidates])
-        return candidates
+        self.variable_candidates = variable_candidates
 
     def is_cursor_within_variable(self, target_state: TargetState) -> bool:
         # Find the last '$' before the cursor
@@ -863,6 +846,12 @@ class Version2(App[None]):
 
         return target_state.text[start:end]
 
+    def get_candidates(self, target_state: TargetState) -> list[DropdownItem]:
+        if self.is_cursor_within_variable(target_state):
+            return self.get_variable_candidates(target_state)
+        else:
+            return super().get_candidates(target_state)
+
     def _completion_strategy(
         self, value: str, target_state: TargetState
     ) -> TargetState:
@@ -891,6 +880,63 @@ class Version2(App[None]):
             return self.get_variable_at_cursor(target_state) or ""
         else:
             return target_state.text
+
+    def get_variable_candidates(self, target_state: TargetState) -> list[DropdownItem]:
+        candidates = self.variable_candidates
+        return candidates(target_state) if callable(candidates) else candidates
+
+
+class Version2(App[None]):
+    CSS = "Vertical { height: 100; }"
+
+    BINDINGS = [
+        Binding("ctrl+n", "insert_matching_text", "Insert matching text"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        # input = TextArea()
+        with VerticalScroll():
+            with Vertical():
+                input_one = Input(id="my-input")
+                input_one.focus()
+                yield input_one
+                yield Input()
+        yield Footer()
+
+    def on_mount(self) -> None:
+        # If we mount it like this it ensures it's on the screen.
+        # This might be easier to explain.
+        # OR we could provide a utility function that does this for us.
+
+        items: list[DropdownItem] = []
+        for header in REQUEST_HEADERS:
+            style = "yellow" if header["experimental"] else ""
+            items.append(DropdownItem(Text(header["name"], style=style)))
+
+        self.screen.mount(
+            VariableAutoComplete(
+                target=self.query_one("#my-input", Input),
+                candidates=[
+                    DropdownItem(main=header) for header in request_header_names
+                ],
+                variable_candidates=[
+                    DropdownItem(main=f"$env:{var}") for var in os.environ.keys()
+                ],
+            )
+        )
+
+    # def get_candidates(self, target_state: TargetState) -> list[DropdownItem]:
+    #     if self.is_cursor_within_variable(target_state):
+    #         # TODO: In Posting, we need to only fetch the available vars
+    #         # depending on the use_host_environment setting.
+    #         vars = os.environ.keys()
+    #         candidates = [DropdownItem(main=f"$env:{var}") for var in vars]
+    #         print("cursor within variable")
+    #     else:
+    #         candidates = [DropdownItem(main=header) for header in request_header_names]
+    #         print("cursor not within variable")
+    #     print([candidate.main.plain for candidate in candidates])
+    #     return candidates
 
     def action_insert_matching_text(self) -> None:
         self.query_one("#my-input", Input).value = "Authorization"

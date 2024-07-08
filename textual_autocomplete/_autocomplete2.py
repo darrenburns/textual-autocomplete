@@ -193,12 +193,12 @@ class AutoComplete(Widget):
         """
 
         self.prevent_default_enter = prevent_default_enter
-        """Prevent the default enter behaviour."""
+        """Prevent the default enter behavior."""
 
         self.prevent_default_tab = prevent_default_tab
-        """Prevent the default tab behaviour."""
+        """Prevent the default tab behavior."""
 
-        self._last_search_string = ""
+        self._last_action_was_completion = False
 
         self._target_state = TargetState("", Selection.cursor((0, 0)))
 
@@ -300,9 +300,10 @@ class AutoComplete(Widget):
 
         # TODO - handle completions in the case of TextArea
 
-        # Hide the dropdown after completion, even if there are still matches.
-        print("HIDING!")
-        self.action_hide()
+        # Set a flag indicating that the last action that was performed
+        # was a completion. This is so that when the target posts a Changed message
+        # as a result of this completion, we can opt to ignore it in `handle_target_updated`
+        self._last_action_was_completion = True
 
     @property
     def target(self) -> Input | TextArea:
@@ -321,7 +322,7 @@ class AutoComplete(Widget):
 
     def _handle_target_message(self, message: events.Event) -> None:
         if isinstance(message, (Input.Changed, TextArea.Changed)):
-            self._handle_target_update
+            self._handle_target_update()
 
     def _align_to_target(self) -> None:
         cursor_x, cursor_y = self.target.cursor_screen_offset
@@ -361,6 +362,10 @@ class AutoComplete(Widget):
 
     def _handle_target_update(self) -> None:
         """Called when the state (text or selection) of the target is updated."""
+        if self._last_action_was_completion:
+            self._last_action_was_completion = False
+            self.action_hide()
+            return
 
         self._target_state = self._get_target_state()
         search_string = self.get_search_string(self._target_state)
@@ -442,9 +447,13 @@ class AutoComplete(Widget):
 
         # If items is a callable, then it's a factory function that returns the candidates.
         # Otherwise, it's a list of candidates.
-        candidates = self.candidates
-        candidates = candidates(target_state) if callable(candidates) else candidates
+        candidates = self.get_candidates(target_state)
         return self.get_matches(target_state, candidates, search_string)
+
+    def get_candidates(self, target_state: TargetState) -> list[DropdownItem]:
+        """Get the candidates to match against."""
+        candidates = self.candidates
+        return candidates(target_state) if callable(candidates) else candidates
 
     def get_matches(
         self,
