@@ -9,6 +9,7 @@ from textual_autocomplete._autocomplete2 import (
     DropdownItem,
     TargetState,
     InvalidTarget,
+    MatcherFactoryType,
 )
 
 from textual_autocomplete.matcher import Matcher
@@ -22,4 +23,5 @@ __all__ = [
     "TargetState",
     "InvalidTarget",
     "Matcher",
+    "MatcherFactoryType",
 ]

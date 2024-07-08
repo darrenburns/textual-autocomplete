@@ -1,9 +1,18 @@
+from __future__ import annotations
+
+import os
+
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical, VerticalScroll
-from textual.widgets import Footer, Input, TextArea
+from textual.widgets import Footer, Input
+from textual.widgets.text_area import Selection
 
-from textual_autocomplete import AutoComplete, DropdownItem
+from textual_autocomplete import (
+    AutoComplete,
+    DropdownItem,
+    TargetState,
+)
 
 from rich.text import Text
 
@@ -777,7 +786,7 @@ REQUEST_HEADERS = [
 
 
 class Version2(App[None]):
-    CSS = "Input {  } Vertical { height: 100; }"
+    CSS = "Vertical { height: 100; }"
 
     BINDINGS = [
         Binding("ctrl+n", "insert_matching_text", "Insert matching text"),
@@ -787,7 +796,9 @@ class Version2(App[None]):
         # input = TextArea()
         with VerticalScroll():
             with Vertical():
-                yield Input(id="my-input")
+                input_one = Input(id="my-input")
+                input_one.focus()
+                yield input_one
                 yield Input()
         yield Footer()
 
@@ -804,10 +815,82 @@ class Version2(App[None]):
         self.screen.mount(
             AutoComplete(
                 target=self.query_one("#my-input", Input),
-                items=items,
-                prevent_default_tab=False,
+                candidates=self.get_candidates,
+                completion_strategy=self._completion_strategy,
+                search_string=self._search_string,
             )
         )
+
+    def get_candidates(self, target_state: TargetState) -> list[DropdownItem]:
+        if self.is_cursor_within_variable(target_state):
+            # TODO: In Posting, we need to only fetch the available vars
+            # depending on the use_host_environment setting.
+            vars = os.environ.keys()
+            candidates = [DropdownItem(main=f"$env:{var}") for var in vars]
+            print("cursor within variable")
+        else:
+            candidates = [DropdownItem(main=header) for header in request_header_names]
+            print("cursor not within variable")
+        print([candidate.main.plain for candidate in candidates])
+        return candidates
+
+    def is_cursor_within_variable(self, target_state: TargetState) -> bool:
+        # Find the last '$' before the cursor
+        cursor = target_state.selection.end[1]
+        last_dollar = target_state.text.rfind("$", 0, cursor)
+
+        if last_dollar == -1:
+            return False
+
+        # Check if there's any whitespace between the last '$' and the cursor
+        return " " not in target_state.text[last_dollar:cursor]
+
+    def find_variable_start(self, target_state: TargetState) -> int:
+        return target_state.text.rfind("$", 0, target_state.selection.end[1])
+
+    def find_variable_end(self, target_state: TargetState) -> int:
+        for i in range(target_state.selection.end[1], len(target_state.text)):
+            if target_state.text[i].isspace():
+                return i
+        return len(target_state.text)
+
+    def get_variable_at_cursor(self, target_state: TargetState) -> str | None:
+        if not self.is_cursor_within_variable(target_state):
+            return None
+
+        start = self.find_variable_start(target_state)
+        end = self.find_variable_end(target_state)
+
+        return target_state.text[start:end]
+
+    def _completion_strategy(
+        self, value: str, target_state: TargetState
+    ) -> TargetState:
+        if self.is_cursor_within_variable(target_state):
+            # Replace the text from the variable start
+            # with the completion text.
+            start = self.find_variable_start(target_state)
+            end = self.find_variable_end(target_state)
+            old_value = target_state.text
+            new_value = old_value[:start] + value + old_value[end:]
+            old_column = target_state.selection.end[1]
+            new_column = old_column + len(new_value)
+            return TargetState(
+                text=new_value,
+                selection=Selection.cursor((0, new_column)),
+            )
+        else:
+            # Replace the entire contents
+            return TargetState(
+                text=value,
+                selection=Selection.cursor((0, len(value))),
+            )
+
+    def _search_string(self, target_state: TargetState) -> str:
+        if self.is_cursor_within_variable(target_state):
+            return self.get_variable_at_cursor(target_state) or ""
+        else:
+            return target_state.text
 
     def action_insert_matching_text(self) -> None:
         self.query_one("#my-input", Input).value = "Authorization"

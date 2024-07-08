@@ -144,12 +144,13 @@ class AutoComplete(Widget):
     def __init__(
         self,
         target: Input | TextArea | str,
-        items: list[DropdownItem] | Callable[[TargetState], list[DropdownItem]],
+        candidates: list[DropdownItem] | Callable[[TargetState], list[DropdownItem]],
         matcher_factory: MatcherFactoryType | None = None,
         completion_strategy: (
             Literal["append", "replace", "insert"]
             | Callable[[str, TargetState], TargetState]
         ) = "replace",
+        search_string: Callable[[TargetState], str] | None = None,
         prevent_default_enter: bool = True,
         prevent_default_tab: bool = True,
         name: str | None = None,
@@ -171,11 +172,25 @@ class AutoComplete(Widget):
         and returns what the new state of the target widget should be after the completion has been applied.
         """
 
-        self.items = items
-        """The items to match on, or a function which returns the items to match on."""
+        self.candidates = candidates
+        """The candidates to match on, or a function which returns the candidates to match on."""
 
         self.matcher_factory = Matcher if matcher_factory is None else matcher_factory
         """A factory function that returns the Matcher to use for matching and highlighting."""
+
+        self.search_string = search_string
+        """A function that returns the search string to match on.
+        
+        This is the string that will be passed into the matcher.
+
+        If None, the default the default behavior will be used.
+
+        For Input widgets, the default behavior is to use the entire value 
+        as the search string.
+
+        For TextArea widgets, the default behavior is to use the text before the cursor 
+        as the search string, up until the last whitespace.
+        """
 
         self.prevent_default_enter = prevent_default_enter
         """Prevent the default enter behaviour."""
@@ -194,7 +209,7 @@ class AutoComplete(Widget):
 
     def on_mount(self) -> None:
         # Subscribe to the target widget's reactive attributes.
-        self.target.message_signal.subscribe(self, self._hijack_keypress)  # type: ignore
+        self.target.message_signal.subscribe(self, self._listen_to_messages)  # type: ignore
         self.screen.screen_layout_refresh_signal.subscribe(  # type: ignore
             self,
             lambda _event: self._align_to_target(),  # type: ignore
@@ -202,8 +217,8 @@ class AutoComplete(Widget):
         self._subscribe_to_target()
         self._handle_target_update()
 
-    def _hijack_keypress(self, event: events.Event) -> None:
-        """Hijack some keypress events of the target widget."""
+    def _listen_to_messages(self, event: events.Event) -> None:
+        """Listen to some events of the target widget."""
 
         try:
             option_list = self.option_list
@@ -243,6 +258,9 @@ class AutoComplete(Widget):
             elif event.key == "escape":
                 self.action_hide()
 
+        if isinstance(event, (Input.Changed, TextArea.Changed)):
+            self._handle_target_update()
+
     def action_hide(self) -> None:
         self.styles.display = "none"
 
@@ -280,7 +298,10 @@ class AutoComplete(Widget):
                     target.value = new_state.text
                     target.cursor_position = new_state.selection.end[1]
 
+        # TODO - handle completions in the case of TextArea
+
         # Hide the dropdown after completion, even if there are still matches.
+        print("HIDING!")
         self.action_hide()
 
     @property
@@ -296,14 +317,11 @@ class AutoComplete(Widget):
     def _subscribe_to_target(self) -> None:
         """Attempt to subscribe to the target widget, if it's available."""
         target = self.target
-        if isinstance(target, Input):
-            self.watch(target, "value", self._handle_target_update)
-            self.watch(target, "cursor_position", self._handle_target_update)
-        else:
-            self.watch(target, "text", self._handle_target_update)
-            self.watch(target, "selection", self._handle_target_update)
-
         self.watch(target, "has_focus", self._handle_focus_change)
+
+    def _handle_target_message(self, message: events.Event) -> None:
+        if isinstance(message, (Input.Changed, TextArea.Changed)):
+            self._handle_target_update
 
     def _align_to_target(self) -> None:
         cursor_x, cursor_y = self.target.cursor_screen_offset
@@ -338,23 +356,34 @@ class AutoComplete(Widget):
         if not has_focus:
             self.action_hide()
         else:
-            self._rebuild_options(self._target_state)
+            search_string = self.get_search_string(self._target_state)
+            self._rebuild_options(self._target_state, search_string)
 
     def _handle_target_update(self) -> None:
         """Called when the state (text or selection) of the target is updated."""
-        search_string = self.get_search_string()
+
         self._target_state = self._get_target_state()
-        self._rebuild_options(self._target_state)
+        search_string = self.get_search_string(self._target_state)
+        self._rebuild_options(self._target_state, search_string)
         self._align_to_target()
 
         if len(search_string) == 0:
             self.styles.display = "none"
-        elif len(search_string) > len(self._last_search_string):
-            self.styles.display = "block" if self.option_list.option_count else "none"
+        else:
+            # If there's only one item in the option list and its the same
+            # as the search string, we can just hide the completion list
+            option_list = self.option_list
+            option_count = option_list.option_count
+            if option_count == 1:
+                first_option = option_list.get_option_at_index(0).prompt
+                if first_option.plain == search_string:
+                    self.styles.display = "none"
+                else:
+                    self.styles.display = "block"
+            else:
+                self.styles.display = "block"
 
-        self._last_search_string = search_string
-
-    def _rebuild_options(self, target_state: TargetState) -> None:
+    def _rebuild_options(self, target_state: TargetState, search_string: str) -> None:
         """Rebuild the options in the dropdown.
 
         Args:
@@ -363,12 +392,12 @@ class AutoComplete(Widget):
         option_list = self.option_list
         option_list.clear_options()
         if self.target.has_focus:
-            matches = self._compute_matches(target_state)
+            matches = self._compute_matches(target_state, search_string)
             if matches:
                 option_list.add_options(matches)
                 option_list.highlighted = 0
 
-    def get_search_string(self) -> str:
+    def get_search_string(self, target_state: TargetState) -> str:
         """This value will be passed to the matcher.
 
         This could be, for example, the text in the target widget, or a substring of that text.
@@ -383,12 +412,14 @@ class AutoComplete(Widget):
         Returns:
             The search string that will be used to filter the dropdown options.
         """
-        target = self.target
-        if isinstance(target, Input):
-            return target.value
+        if self.search_string is not None:
+            return self.search_string(target_state)
+
+        if isinstance(self.target, Input):
+            return target_state.text
         else:
-            row, col = target.cursor_location
-            line = target.document.get_line(row)
+            row, col = target_state.selection.end
+            line = self.target.document.get_line(row)
 
             for index in range(col, 0, -1):
                 if not line[index].isalnum():
@@ -397,7 +428,9 @@ class AutoComplete(Widget):
 
             return ""
 
-    def _compute_matches(self, target_state: TargetState) -> list[DropdownItem]:
+    def _compute_matches(
+        self, target_state: TargetState, search_string: str
+    ) -> list[DropdownItem]:
         """Compute the matches based on the target state.
 
         Args:
@@ -409,12 +442,15 @@ class AutoComplete(Widget):
 
         # If items is a callable, then it's a factory function that returns the candidates.
         # Otherwise, it's a list of candidates.
-        items = self.items
-        candidates = items(target_state) if callable(items) else items
-        return self.get_matches(target_state, candidates)
+        candidates = self.candidates
+        candidates = candidates(target_state) if callable(candidates) else candidates
+        return self.get_matches(target_state, candidates, search_string)
 
     def get_matches(
-        self, target_state: TargetState, candidates: list[DropdownItem]
+        self,
+        target_state: TargetState,
+        candidates: list[DropdownItem],
+        search_string: str,
     ) -> list[DropdownItem]:
         """Given the state of the target widget, return the DropdownItems
         which match the query string and should be appear in the dropdown.
@@ -426,7 +462,6 @@ class AutoComplete(Widget):
         Returns:
             The matches to display in the dropdown.
         """
-        search_string = self.get_search_string()
         if not search_string:
             return candidates
 
