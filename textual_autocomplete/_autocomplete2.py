@@ -320,6 +320,10 @@ class AutoComplete(Widget):
         """Attempt to subscribe to the target widget, if it's available."""
         target = self.target
         self.watch(target, "has_focus", self._handle_focus_change)
+        if isinstance(target, Input):
+            self.watch(target, "cursor_position", self._align_to_target)
+        else:
+            self.watch(target, "selection", self._align_to_target)
 
     def _handle_target_message(self, message: events.Event) -> None:
         if isinstance(message, (Input.Changed, TextArea.Changed)):
