@@ -231,6 +231,7 @@ class AutoComplete(Widget):
             displayed = self.display
             highlighted = option_list.highlighted or 0
             if event.key == "down":
+                event.stop()
                 event.prevent_default()
                 # If you press `down` while in an Input and the autocomplete is currently
                 # hidden, then we should show the dropdown.
@@ -244,6 +245,7 @@ class AutoComplete(Widget):
 
             elif event.key == "up":
                 if displayed:
+                    event.stop()
                     event.prevent_default()
                     highlighted = (highlighted - 1) % option_list.option_count
                     option_list.highlighted = highlighted
@@ -369,16 +371,24 @@ class AutoComplete(Widget):
 
     def _handle_target_update(self) -> None:
         """Called when the state (text or selection) of the target is updated."""
-        if self._last_action_was_completion:
-            self._last_action_was_completion = False
-            self.action_hide()
-            return
 
         self._target_state = self._get_target_state()
         search_string = self.get_search_string(self._target_state)
         self._rebuild_options(self._target_state, search_string)
         self._align_to_target()
 
+        # We've rebuilt the options based on the latest change,
+        # however, if the user made that change via a completion,
+        # then we always want to hide the dropdown.
+        if self._last_action_was_completion:
+            self._last_action_was_completion = False
+            self.action_hide()
+            return
+
+        # Determine visibility after the user makes a change in the
+        # target widget (e.g. typing in a character in the Input).
+        # The code below is only for typed changes - not for accepting
+        # of completions, which is handled above.
         if len(search_string) == 0:
             self.styles.display = "none"
         else:
