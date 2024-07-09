@@ -249,10 +249,12 @@ class AutoComplete(Widget):
                     option_list.highlighted = highlighted
             elif event.key == "enter":
                 if self.prevent_default_enter and displayed:
+                    event.stop()
                     event.prevent_default()
                 self._complete(option_index=highlighted)
             elif event.key == "tab":
                 if self.prevent_default_tab and displayed:
+                    event.stop()
                     event.prevent_default()
                 self._complete(option_index=highlighted)
             elif event.key == "escape":
