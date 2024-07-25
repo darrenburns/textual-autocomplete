@@ -240,6 +240,10 @@ class AutoComplete(Widget):
                         highlighted = 0
                     else:
                         highlighted = (highlighted + 1) % option_list.option_count
+                else:
+                    if displayed:
+                        highlighted = (highlighted + 1) % option_list.option_count
+
                 option_list.highlighted = highlighted
 
             elif event.key == "up":
@@ -297,8 +301,13 @@ class AutoComplete(Widget):
                     )
                     target.value = new_state.text
                     target.cursor_position = new_state.selection.end[1]
+        else:
+            if completion_strategy == "replace":
+                # Replace the search string.
+                target.text = ""
 
-        # TODO - handle completions in the case of TextArea
+            elif completion_strategy == "append":
+                target.text = target.text + highlighted_value
 
         # Set a flag indicating that the last action that was performed
         # was a completion. This is so that when the target posts a Changed message
@@ -431,12 +440,15 @@ class AutoComplete(Widget):
             row, col = target_state.selection.end
             line = self.target.document.get_line(row)
 
-            for index in range(col, 0, -1):
-                if not line[index].isalnum():
-                    query_string = line[index + 1 : col + 1]
+            # Start from the character behind the cursor
+            for index in range(col - 1, -1, -1):
+                if not line[index].isalnum() and line[index] not in "_-":
+                    query_string = line[index + 1 : col]
                     return query_string
 
-            return ""
+            # If no non-alphanumeric character (except underscore and hyphen) is found, return the whole line up to the cursor
+            query_string = line[:col]
+            return query_string
 
     def _compute_matches(
         self, target_state: TargetState, search_string: str

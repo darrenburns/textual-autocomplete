@@ -887,7 +887,7 @@ class VariableAutoComplete(AutoComplete):
 
 
 class Version2(App[None]):
-    CSS = "Vertical { height: 100; }"
+    CSS = "Vertical { height: 100; } TextArea { height: 1fr; }"
 
     BINDINGS = [
         Binding("ctrl+n", "insert_matching_text", "Insert matching text"),
@@ -901,6 +901,7 @@ class Version2(App[None]):
                 input_one.focus()
                 yield input_one
                 yield Input()
+                yield TextArea.code_editor()
         yield Footer()
 
     def on_mount(self) -> None:
@@ -920,7 +921,16 @@ class Version2(App[None]):
                     DropdownItem(main=header) for header in request_header_names
                 ],
                 variable_candidates=[
-                    DropdownItem(main=f"$env:{var}") for var in os.environ.keys()
+                    DropdownItem(main=f"${var}") for var in os.environ.keys()
+                ],
+            )
+        )
+
+        self.screen.mount(
+            AutoComplete(
+                target=self.query_one(TextArea),
+                candidates=[
+                    DropdownItem(main=header) for header in request_header_names
                 ],
             )
         )
