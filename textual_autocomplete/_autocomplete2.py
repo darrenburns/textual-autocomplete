@@ -165,7 +165,9 @@ class AutoComplete(Widget):
         target: Input | TextArea | str,
         candidates: list[DropdownItem] | Callable[[TargetState], list[DropdownItem]],
         matcher_factory: MatcherFactoryType | None = None,
-        completion_strategy: (Callable[[str, TargetState], TargetState] | None) = None,
+        completion_strategy: (
+            Callable[[str, TargetState], TargetState | None] | None
+        ) = None,
         search_string: Callable[[TargetState], str] | None = None,
         prevent_default_enter: bool = True,
         prevent_default_tab: bool = True,
@@ -181,7 +183,8 @@ class AutoComplete(Widget):
         Must be on the same screen as the dropdown instance."""
 
         self.completion_strategy = completion_strategy
-        """A function describing how the state of the target widget should change when the value is accepted.
+        """A function which modifies the state of the target widget 
+        to perform the completion.
         
         If None, the default behavior will be used.
         """
@@ -331,23 +334,19 @@ class AutoComplete(Widget):
                 target.value = ""
                 target.insert_text_at_cursor(highlighted_value)
             elif callable(completion_strategy):
-                new_state = completion_strategy(
+                completion_strategy(
                     highlighted_value,
                     self._get_target_state(),
                 )
-                target.value = new_state.text
-                target.cursor_position = new_state.selection.end[1]
         else:  # elif isinstance(target, TextArea):
             if completion_strategy is None:
                 replacement_range = self.get_text_area_word_bounds_before_cursor(target)
                 target.replace(highlighted_value, *replacement_range)
             elif callable(completion_strategy):
-                new_state = completion_strategy(
+                completion_strategy(
                     highlighted_value,
                     self._get_target_state(),
                 )
-                target.text = new_state.text
-                target.cursor_location = new_state.selection.end
 
         # Set a flag indicating that the last action that was performed
         # was a completion. This is so that when the target posts a Changed message
@@ -381,13 +380,11 @@ class AutoComplete(Widget):
         """
         cursor_location = target.cursor_location
         for char, (row, column) in self.yield_characters_before_cursor(target):
-            print("checking char: ", char)
-            if not char.isalnum() and char not in "_-":
+            if not char.isalnum() and char not in "$_-":
                 return (row, column + 1), cursor_location
             elif column == 0:
                 return (row, column), cursor_location
 
-        print("no word found")
         return cursor_location, cursor_location
 
     @property
@@ -454,6 +451,7 @@ class AutoComplete(Widget):
 
         self._target_state = self._get_target_state()
         search_string = self.get_search_string(self._target_state)
+        print("search_string", search_string)
         self._rebuild_options(self._target_state, search_string)
         self._align_to_target()
 
@@ -515,15 +513,16 @@ class AutoComplete(Widget):
             The search string that will be used to filter the dropdown options.
         """
         if self.search_string is not None:
-            return self.search_string(target_state)
+            search_string = self.search_string(target_state)
+            print("CUSTOM search_string", repr(search_string))
+            return search_string
 
         if isinstance(self.target, Input):
             return target_state.text
         else:
             start, end = self.get_text_area_word_bounds_before_cursor(self.target)
-            print("start, end", start, end)
             search_string = self.target.get_text_range(start, end)
-            print("search string", search_string)
+            print("DEFAULT search_string", search_string)
             return search_string
 
     def _compute_matches(
