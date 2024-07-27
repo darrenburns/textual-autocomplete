@@ -340,7 +340,6 @@ class AutoComplete(Widget):
         else:  # elif isinstance(target, TextArea):
             if completion_strategy is None:
                 replacement_range = self.get_text_area_word_bounds_before_cursor(target)
-                print("replacement_range", replacement_range)
                 target.replace(highlighted_value, *replacement_range)
             elif callable(completion_strategy):
                 new_state = completion_strategy(
@@ -383,7 +382,9 @@ class AutoComplete(Widget):
         cursor_location = target.cursor_location
         for char, (row, column) in self.yield_characters_before_cursor(target):
             print("checking char: ", char)
-            if (not char.isalnum() and char not in "_-") or column == 0:
+            if not char.isalnum() and char not in "_-":
+                return (row, column + 1), cursor_location
+            elif column == 0:
                 return (row, column), cursor_location
 
         print("no word found")
