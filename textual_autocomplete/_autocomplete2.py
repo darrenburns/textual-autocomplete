@@ -1,8 +1,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
+import functools
 from operator import itemgetter
-from typing import Callable, ClassVar, Literal, Optional, cast
+import types
+from typing import (
+    Callable,
+    ClassVar,
+    Iterator,
+    NamedTuple,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+)
 from rich.measure import Measurement
 from rich.style import Style
 from rich.text import Text, TextType
@@ -16,7 +28,7 @@ from textual.geometry import Region
 from textual.widget import Widget
 from textual.widgets import Input, TextArea, OptionList
 from textual.widgets.option_list import Option
-from textual.widgets.text_area import Selection
+from textual.widgets.text_area import Location, Selection
 
 
 @dataclass
@@ -26,6 +38,11 @@ class TargetState:
 
     selection: Selection
     """The selection of the target widget."""
+
+
+class SearchString(NamedTuple):
+    start_location: int
+    value: str
 
 
 class InvalidTarget(Exception):
@@ -94,6 +111,8 @@ class AutoCompleteList(OptionList):
 
 MatcherFactoryType = Callable[[str, Optional[Style], bool], Matcher]
 
+TargetType = TypeVar("TargetType", bound=Union[Input, TextArea])
+
 
 class AutoComplete(Widget):
     BINDINGS = [
@@ -146,10 +165,7 @@ class AutoComplete(Widget):
         target: Input | TextArea | str,
         candidates: list[DropdownItem] | Callable[[TargetState], list[DropdownItem]],
         matcher_factory: MatcherFactoryType | None = None,
-        completion_strategy: (
-            Literal["append", "replace", "insert"]
-            | Callable[[str, TargetState], TargetState]
-        ) = "replace",
+        completion_strategy: (Callable[[str, TargetState], TargetState] | None) = None,
         search_string: Callable[[TargetState], str] | None = None,
         prevent_default_enter: bool = True,
         prevent_default_tab: bool = True,
@@ -165,11 +181,9 @@ class AutoComplete(Widget):
         Must be on the same screen as the dropdown instance."""
 
         self.completion_strategy = completion_strategy
-        """The strategy that should be use to do the completion.
+        """A function describing how the state of the target widget should change when the value is accepted.
         
-        You can pass a string literal to use one of the built-in strategies, or a function
-        which takes the highlighted value in the dropdown and the current state of the target widget 
-        and returns what the new state of the target widget should be after the completion has been applied.
+        If None, the default behavior will be used.
         """
 
         self.candidates = candidates
@@ -199,8 +213,15 @@ class AutoComplete(Widget):
         """Prevent the default tab behavior."""
 
         self._last_action_was_completion = False
+        """Used to filter duplicate performing an action twice on a character insertion.
+        An insertion/deletion moves the cursor and creates a "changed" event, so we end up
+        with two events for the same action.
+        """
 
         self._target_state = TargetState("", Selection.cursor((0, 0)))
+        """Cached state of the target Input/TextArea."""
+
+        self._patch_on_event()
 
     def compose(self) -> ComposeResult:
         option_list = AutoCompleteList(wrap=False)
@@ -216,6 +237,25 @@ class AutoComplete(Widget):
         )
         self._subscribe_to_target()
         self._handle_target_update()
+
+    def _patch_on_event(self) -> None:
+        target = self.target
+        if isinstance(target, TextArea):
+            original_on_event = target.on_event
+
+            @functools.wraps(original_on_event)
+            async def on_event(text_area: TextArea, event: events.Event) -> None:
+                if (
+                    isinstance(event, events.Key)
+                    and event.key in {"tab", "enter"}
+                    and self.styles.display != "none"
+                ):
+                    self._complete(self.option_list.highlighted or 0)
+                    return
+                return await original_on_event(event)
+
+            bound_on_event = types.MethodType(on_event, target)
+            setattr(target, "on_event", bound_on_event)
 
     def _listen_to_messages(self, event: events.Event) -> None:
         """Listen to some events of the target widget."""
@@ -277,7 +317,7 @@ class AutoComplete(Widget):
 
         This is when the user highlights an option in the dropdown and presses tab or enter.
         """
-        if not self.display:
+        if not self.display or self.option_list.option_count == 0:
             return
 
         target = self.target
@@ -287,37 +327,67 @@ class AutoComplete(Widget):
         option = cast(DropdownItem, option_list.get_option_at_index(highlighted))
         highlighted_value = option.main.plain
         if isinstance(target, Input):
-            if completion_strategy == "replace":
+            if completion_strategy is None:
                 target.value = ""
                 target.insert_text_at_cursor(highlighted_value)
-            elif completion_strategy == "insert":
-                target.insert_text_at_cursor(highlighted_value)
-            elif completion_strategy == "append":
-                old_value = target.value
-                new_value = old_value + highlighted_value
-                target.value = new_value
-                target.action_end()
-            else:
-                if callable(completion_strategy):
-                    new_state = completion_strategy(
-                        highlighted_value,
-                        self._get_target_state(),
-                    )
-                    target.value = new_state.text
-                    target.cursor_position = new_state.selection.end[1]
-        else:
-            if completion_strategy == "replace":
-                # Replace the search string.
-                target.text = ""
-
-            elif completion_strategy == "append":
-                target.text = target.text + highlighted_value
+            elif callable(completion_strategy):
+                new_state = completion_strategy(
+                    highlighted_value,
+                    self._get_target_state(),
+                )
+                target.value = new_state.text
+                target.cursor_position = new_state.selection.end[1]
+        else:  # elif isinstance(target, TextArea):
+            if completion_strategy is None:
+                replacement_range = self.get_text_area_word_bounds_before_cursor(target)
+                print("replacement_range", replacement_range)
+                target.replace(highlighted_value, *replacement_range)
+            elif callable(completion_strategy):
+                new_state = completion_strategy(
+                    highlighted_value,
+                    self._get_target_state(),
+                )
+                target.text = new_state.text
+                target.cursor_location = new_state.selection.end
 
         # Set a flag indicating that the last action that was performed
         # was a completion. This is so that when the target posts a Changed message
         # as a result of this completion, we can opt to ignore it in `handle_target_updated`
         self._last_action_was_completion = True
         self.action_hide()
+
+    def yield_characters_before_cursor(
+        self, target: TextArea
+    ) -> Iterator[tuple[str, Location]]:
+        cursor_location = target.cursor_location
+
+        cursor_row, column = cursor_location
+        start = (cursor_row, 0)
+        text = target.get_text_range(start=start, end=cursor_location)
+        print("considering text: ", repr(text))
+        for char in reversed(text):
+            column -= 1
+            yield char, (cursor_row, column)
+
+    def get_text_area_word_bounds_before_cursor(
+        self, target: TextArea
+    ) -> tuple[Location, Location]:
+        """Get the bounds of the word before the cursor in a TextArea.
+
+        A word is defined as a sequence of alphanumeric characters or underscores,
+        bounded by the start of the line, a space, or a non-alphanumeric character.
+
+        Returns:
+            A tuple containing the start and end positions of the word as (row, column) tuples.
+        """
+        cursor_location = target.cursor_location
+        for char, (row, column) in self.yield_characters_before_cursor(target):
+            print("checking char: ", char)
+            if (not char.isalnum() and char not in "_-") or column == 0:
+                return (row, column), cursor_location
+
+        print("no word found")
+        return cursor_location, cursor_location
 
     @property
     def target(self) -> Input | TextArea:
@@ -449,18 +519,11 @@ class AutoComplete(Widget):
         if isinstance(self.target, Input):
             return target_state.text
         else:
-            row, col = target_state.selection.end
-            line = self.target.document.get_line(row)
-
-            # Start from the character behind the cursor
-            for index in range(col - 1, -1, -1):
-                if not line[index].isalnum() and line[index] not in "_-":
-                    query_string = line[index + 1 : col]
-                    return query_string
-
-            # If no non-alphanumeric character (except underscore and hyphen) is found, return the whole line up to the cursor
-            query_string = line[:col]
-            return query_string
+            start, end = self.get_text_area_word_bounds_before_cursor(self.target)
+            print("start, end", start, end)
+            search_string = self.target.get_text_range(start, end)
+            print("search string", search_string)
+            return search_string
 
     def _compute_matches(
         self, target_state: TargetState, search_string: str
