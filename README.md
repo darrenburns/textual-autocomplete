@@ -13,9 +13,9 @@ https://user-images.githubusercontent.com/5740731/205718330-a9364894-9133-40ca-8
 
 </details>
 
-> **Warning**
-> Textual still has a major version number of `0`, meaning there are still significant API changes happening which can sometimes impact this project.
-> I'll do my best to keep it compatible with the latest version of Textual, but there may be a slight delay between Textual releases and this library working with said release.
+> [!WARNING]
+> This README is relevant to version 2.x of `textual-autocomplete`. Alpha versions of version 3 are available on PyPI now, but they are unstable and undocumented.
+> For best results, pin `textual-autocomplete` to version 2.
 
 ## Quickstart
 
