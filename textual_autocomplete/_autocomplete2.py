@@ -274,6 +274,19 @@ class AutoComplete(Widget):
             displayed = self.display
             highlighted = option_list.highlighted or 0
             if event.key == "down":
+                # Check if there's only one item and it matches the search string
+                if option_list.option_count == 1:
+                    search_string = self.get_search_string(self._get_target_state())
+                    first_option = option_list.get_option_at_index(0).prompt
+                    text_from_option = (
+                        first_option.plain
+                        if isinstance(first_option, Text)
+                        else first_option
+                    )
+                    if text_from_option == search_string:
+                        # Don't prevent default behavior in this case
+                        return
+
                 event.stop()
                 event.prevent_default()
                 # If you press `down` while in an Input and the autocomplete is currently
@@ -451,7 +464,6 @@ class AutoComplete(Widget):
 
         self._target_state = self._get_target_state()
         search_string = self.get_search_string(self._target_state)
-        print("search_string", search_string)
         self._rebuild_options(self._target_state, search_string)
         self._align_to_target()
 
@@ -467,21 +479,22 @@ class AutoComplete(Widget):
         # target widget (e.g. typing in a character in the Input).
         # The code below is only for typed changes - not for accepting
         # of completions, which is handled above.
-        if len(search_string) == 0:
+        option_list = self.option_list
+        option_count = option_list.option_count
+
+        if len(search_string) == 0 or option_count == 0:
             self.styles.display = "none"
-        else:
-            # If there's only one item in the option list and its the same
-            # as the search string, we can just hide the completion list
-            option_list = self.option_list
-            option_count = option_list.option_count
-            if option_count == 1:
-                first_option = option_list.get_option_at_index(0).prompt
-                if first_option.plain == search_string:
-                    self.styles.display = "none"
-                else:
-                    self.styles.display = "block"
+        elif option_count == 1:
+            first_option = option_list.get_option_at_index(0).prompt
+            text_from_option = (
+                first_option.plain if isinstance(first_option, Text) else first_option
+            )
+            if text_from_option == search_string:
+                self.styles.display = "none"
             else:
                 self.styles.display = "block"
+        else:
+            self.styles.display = "block"
 
     def _rebuild_options(self, target_state: TargetState, search_string: str) -> None:
         """Rebuild the options in the dropdown.
