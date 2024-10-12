@@ -24,7 +24,7 @@ from textual.binding import Binding
 from textual.command import on
 from textual.css.query import NoMatches
 from textual_autocomplete.matcher import Matcher
-from textual.geometry import Region
+from textual.geometry import Region, Spacing
 from textual.widget import Widget
 from textual.widgets import Input, TextArea, OptionList
 from textual.widgets.option_list import Option
@@ -426,7 +426,6 @@ class AutoComplete(Widget):
 
     def _align_to_target(self) -> None:
         cursor_x, cursor_y = self.target.cursor_screen_offset
-
         dropdown = self.query_one(OptionList)
         width, height = dropdown.size
         x, y, _width, _height = Region(
@@ -434,9 +433,8 @@ class AutoComplete(Widget):
             cursor_y + 1,
             width,
             height,
-        ).translate_inside(self.screen.region)
-
-        self.styles.offset = x, y
+        ).constrain("inside", "none", Spacing.all(2), self.screen.region)
+        self.styles.offset = max(x - 1, 0), y
 
     def _get_target_state(self) -> TargetState:
         """Get the state of the target widget."""
@@ -471,11 +469,11 @@ class AutoComplete(Widget):
 
         # Determine visibility after the user makes a change in the
         # target widget (e.g. typing in a character in the Input).
-        should_show = self.should_show_dropdown(search_string)
-        if should_show and not self.last_action_was_completion:
+        self._rebuild_options(self._target_state, search_string)
+        self._align_to_target()
+
+        if self.should_show_dropdown(search_string):
             self.action_show()
-            self._rebuild_options(self._target_state, search_string)
-            self._align_to_target()
         else:
             self.action_hide()
 
@@ -509,7 +507,7 @@ class AutoComplete(Widget):
             text_from_option = (
                 first_option.plain if isinstance(first_option, Text) else first_option
             )
-            return text_from_option.lower() != search_string.lower()
+            return text_from_option != search_string
         else:
             return True
 

@@ -7,9 +7,9 @@ readme = "README.md"
 packages = [{ include = "textual_autocomplete" }]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8.1"
 #textual = {path="../textual", develop=true}
-textual = ">=0.58.0"
+textual = ">=0.83.0"
 typing-extensions = "^4.5.0"
 
 [tool.poetry.group.dev.dependencies]
