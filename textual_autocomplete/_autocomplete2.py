@@ -185,7 +185,6 @@ class AutoComplete(Widget):
         self.completion_strategy = completion_strategy
         """A function which modifies the state of the target widget 
         to perform the completion.
-        
         If None, the default behavior will be used.
         """
 
@@ -215,7 +214,7 @@ class AutoComplete(Widget):
         self.prevent_default_tab = prevent_default_tab
         """Prevent the default tab behavior."""
 
-        self._last_action_was_completion = False
+        self.last_action_was_completion = False
         """Used to filter duplicate performing an action twice on a character insertion.
         An insertion/deletion moves the cursor and creates a "changed" event, so we end up
         with two events for the same action.
@@ -328,6 +327,9 @@ class AutoComplete(Widget):
     def action_hide(self) -> None:
         self.styles.display = "none"
 
+    def action_show(self) -> None:
+        self.styles.display = "block"
+
     def _complete(self, option_index: int) -> None:
         """Do the completion (i.e. insert the selected item into the target input/textarea).
 
@@ -364,7 +366,7 @@ class AutoComplete(Widget):
         # Set a flag indicating that the last action that was performed
         # was a completion. This is so that when the target posts a Changed message
         # as a result of this completion, we can opt to ignore it in `handle_target_updated`
-        self._last_action_was_completion = True
+        self.last_action_was_completion = True
         self.action_hide()
 
     def yield_characters_before_cursor(
@@ -375,7 +377,6 @@ class AutoComplete(Widget):
         cursor_row, column = cursor_location
         start = (cursor_row, 0)
         text = target.get_text_range(start=start, end=cursor_location)
-        print("considering text: ", repr(text))
         for char in reversed(text):
             column -= 1
             yield char, (cursor_row, column)
@@ -460,41 +461,57 @@ class AutoComplete(Widget):
             self._rebuild_options(self._target_state, search_string)
 
     def _handle_target_update(self) -> None:
-        """Called when the state (text or selection) of the target is updated."""
+        """Called when the state (text or selection) of the target is updated.
 
+        Here we align the dropdown to the target, determine if it should be visible,
+        and rebuild the options in it.
+        """
         self._target_state = self._get_target_state()
         search_string = self.get_search_string(self._target_state)
-        self._rebuild_options(self._target_state, search_string)
-        self._align_to_target()
-
-        # We've rebuilt the options based on the latest change,
-        # however, if the user made that change via a completion,
-        # then we always want to hide the dropdown.
-        if self._last_action_was_completion:
-            self._last_action_was_completion = False
-            self.action_hide()
-            return
 
         # Determine visibility after the user makes a change in the
         # target widget (e.g. typing in a character in the Input).
-        # The code below is only for typed changes - not for accepting
-        # of completions, which is handled above.
+        should_show = self.should_show_dropdown(search_string)
+        if should_show and not self.last_action_was_completion:
+            self.action_show()
+            self._rebuild_options(self._target_state, search_string)
+            self._align_to_target()
+        else:
+            self.action_hide()
+
+        # We've rebuilt the options based on the latest change,
+        # however, if the user made that change via selecting a completion
+        # from the dropdown, then we always want to hide the dropdown.
+        if self.last_action_was_completion:
+            self.last_action_was_completion = False
+            self.action_hide()
+            return
+
+    def should_show_dropdown(self, search_string: str) -> bool:
+        """
+        Determine whether to show or hide the dropdown based on the current state.
+
+        This method can be overridden to customize the visibility behavior.
+
+        Args:
+            search_string: The current search string.
+
+        Returns:
+            bool: True if the dropdown should be shown, False otherwise.
+        """
         option_list = self.option_list
         option_count = option_list.option_count
 
         if len(search_string) == 0 or option_count == 0:
-            self.styles.display = "none"
+            return False
         elif option_count == 1:
             first_option = option_list.get_option_at_index(0).prompt
             text_from_option = (
                 first_option.plain if isinstance(first_option, Text) else first_option
             )
-            if text_from_option == search_string:
-                self.styles.display = "none"
-            else:
-                self.styles.display = "block"
+            return text_from_option.lower() != search_string.lower()
         else:
-            self.styles.display = "block"
+            return True
 
     def _rebuild_options(self, target_state: TargetState, search_string: str) -> None:
         """Rebuild the options in the dropdown.
@@ -527,7 +544,6 @@ class AutoComplete(Widget):
         """
         if self.search_string is not None:
             search_string = self.search_string(target_state)
-            print("CUSTOM search_string", repr(search_string))
             return search_string
 
         if isinstance(self.target, Input):
@@ -535,7 +551,6 @@ class AutoComplete(Widget):
         else:
             start, end = self.get_text_area_word_bounds_before_cursor(self.target)
             search_string = self.target.get_text_range(start, end)
-            print("DEFAULT search_string", search_string)
             return search_string
 
     def _compute_matches(
