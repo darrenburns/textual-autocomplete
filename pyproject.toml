@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "textual-autocomplete"
-version = "2.2.0b0"
+version = "2.3"
 description = "Easily add autocomplete dropdowns to your Textual apps."
 authors = ["Darren Burns <darrenb900@gmail.com>"]
 readme = "README.md"
@@ -15,7 +15,6 @@ typing-extensions = "^4.5.0"
 [tool.poetry.group.dev.dependencies]
 mypy = "^0.991"
 black = "^22.10.0"
-#textual = { version = "^0.10.0", extras = ["dev"] }
 textual = { version = ">=0.14.0", extras = ["dev"] }
 ward = { version = "^0.67.2b0", allow-prereleases = true }
 

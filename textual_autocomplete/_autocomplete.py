@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Callable, ClassVar, Iterable, Mapping, cast
+from dataclasses import dataclass, field
+from typing import Callable, ClassVar, Iterable, Mapping, cast, TypeAlias
 
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.style import Style
@@ -13,6 +13,12 @@ from textual.geometry import Region, Size
 from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Input
+
+from datetime import datetime
+
+HighlightType: TypeAlias = (
+    Iterable[tuple[int, int] | tuple[int, int, Style]] | None
+)
 
 
 class DropdownRender:
@@ -43,7 +49,9 @@ class DropdownRender:
                 table.add_column("main", style=get_style("main-column"))
             if self.matches[0].right_meta:
                 table.add_column(
-                    "right_meta", justify="right", style=get_style("right-column")
+                    "right_meta",
+                    justify="right",
+                    style=get_style("right-column"),
                 )
 
         add_row = table.add_row
@@ -53,7 +61,9 @@ class DropdownRender:
                 highlight_style = self.component_styles["highlight-match"]
                 if match.highlight_ranges is not None:
                     # If the user has supplied their own ranges to highlight
-                    for start, end in match.highlight_ranges:
+                    for start, end, *style in match.highlight_ranges:
+                        if style:
+                            highlight_style = style[0]
                         main_text.stylize(highlight_style, start, end)
                 else:
                     # Otherwise, by default, we highlight case-insensitive substrings
@@ -109,7 +119,9 @@ class DropdownItem:
     main: TextType = ""
     left_meta: TextType = ""
     right_meta: TextType = ""
-    highlight_ranges: Iterable[tuple[int, int]] | None = None
+    highlight_ranges: HighlightType = None
+    age: datetime = field(default_factory=lambda: datetime.fromtimestamp(0))
+    sort_priority: int = 0
 
     def __post_init__(self):
         if isinstance(self.left_meta, str):
@@ -127,7 +139,8 @@ class InputState:
 
 
 CompletionStrategy = (
-    "Literal['append', 'replace', 'insert'] | Callable[[str, InputState], InputState]"
+    "Literal['append', 'replace', 'insert'] | Callable[[str, InputState],"
+    " InputState]"
 )
 
 
@@ -216,7 +229,8 @@ AutoComplete {
         if self.dropdown.display and selected is not None:
             selected_value = selected.main.plain
             if completion_strategy == "replace":
-                self.input.value = ""
+                with self.input.prevent(Input.Changed):
+                    self.input.value = ""
                 self.input.insert_text_at_cursor(selected_value)
             elif completion_strategy == "insert":
                 self.input.insert_text_at_cursor(selected_value)
@@ -330,11 +344,12 @@ Dropdown .autocomplete--selection-cursor {
             callback=self._input_value_changed,
         )
 
-        self.watch(
-            self.input_widget,
-            attribute_name="cursor_position",
-            callback=self._input_cursor_position_changed,
-        )
+        # removed this. Was causing items to be built twice (value changes cursor position)
+        # self.watch(
+        #     self.input_widget,
+        #     attribute_name="cursor_position",
+        #     callback=self._input_cursor_position_changed,
+        # )
 
         # TODO: Having to use scroll_target here because scroll_y doesn't fire.
         #  Will also probably need separate callbacks for x and y.
@@ -345,7 +360,9 @@ Dropdown .autocomplete--selection-cursor {
         )
 
         if self.input_widget is not None:
-            self.sync_state(self.input_widget.value, self.input_widget.cursor_position)
+            self.sync_state(
+                self.input_widget.value, self.input_widget.cursor_position
+            )
 
     def cursor_up(self) -> None:
         if not self.display:
@@ -386,7 +403,9 @@ Dropdown .autocomplete--selection-cursor {
 
     def sync_state(self, value: str, input_cursor_position: int) -> None:
         if callable(self.items):
-            input_state = InputState(value=value, cursor_position=input_cursor_position)
+            input_state = InputState(
+                value=value, cursor_position=input_cursor_position
+            )
             matches = self.items(input_state)
         else:
             matches = []
@@ -411,7 +430,9 @@ Dropdown .autocomplete--selection-cursor {
             )
 
         self.child.matches = matches
-        self.display = len(matches) > 0 and value != "" and self.input_widget.has_focus
+        self.display = (
+            len(matches) > 0 and value != "" and self.input_widget.has_focus
+        )
         self.cursor_home()
         self.reposition(input_cursor_position)
         self.child.refresh()
@@ -478,8 +499,12 @@ DropdownChild {
         assert self.linked_input is not None, "input_widget set in on_mount"
         parent_component = self.parent.get_component_rich_style
         component_styles = {
-            "selection-cursor": parent_component("autocomplete--selection-cursor"),
-            "highlight-match": parent_component("autocomplete--highlight-match"),
+            "selection-cursor": parent_component(
+                "autocomplete--selection-cursor"
+            ),
+            "highlight-match": parent_component(
+                "autocomplete--highlight-match"
+            ),
             "left-column": parent_component("autocomplete--left-column"),
             "main-column": parent_component("autocomplete--main-column"),
             "right-column": parent_component("autocomplete--right-column"),
@@ -491,7 +516,9 @@ DropdownChild {
             component_styles=component_styles,
         )
 
-    def get_content_height(self, container: Size, viewport: Size, width: int) -> int:
+    def get_content_height(
+        self, container: Size, viewport: Size, width: int
+    ) -> int:
         return len(self.matches)
 
     @property
