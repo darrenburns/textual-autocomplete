@@ -23,7 +23,19 @@
           build-system = [pkgs.python312Packages.poetry-core];
           dependencies = with pkgs.python312Packages; [
             python
-            textual
+            (textual.overridePythonAttrs (old: rec {
+              version = "0.85.0";
+              src = pkgs.fetchFromGitHub {
+                owner = "Textualize";
+                repo = "textual";
+                rev = "refs/tags/v${version}";
+                hash = "sha256-ROq/Pjq6XRgi9iqMlCzpLmgzJzLl21MI7148cOxHS3o=";
+              };
+
+              postPatch = ''
+                sed -i "/^requires-python =.*/a version = '${version}'" pyproject.toml
+              '';
+            }))
             typing-extensions
           ];
           meta = {
