@@ -7,8 +7,8 @@
   outputs = inputs @ {flake-parts, ...}:
     flake-parts.lib.mkFlake {inherit inputs;} {
       flake.overlays.default = final: prev: {
-        python312PackagesOverlays =
-          prev.python312PackagesOverlays
+        pythonPackagesOverlays =
+          prev.pythonPackagesOverlays
           ++ [
             (python-final: python-prev: {textual-autocomplete = final.callPackage ./package.nix {};})
           ];
