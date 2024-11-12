@@ -7,7 +7,7 @@
   outputs = inputs @ {flake-parts, ...}:
     flake-parts.lib.mkFlake {inherit inputs;} {
       flake.overlays.default = final: prev: {
-        python312Packages = prev.python312Packages.override (old: {textual-autocomplete = final.callPackage ./package.nix {};});
+        python312Packages = prev.python312Packages.override {packageOverrides = {textual-autocomplete = final.callPackage ./package.nix {};};};
       };
       systems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
       perSystem = {pkgs, ...}: {
