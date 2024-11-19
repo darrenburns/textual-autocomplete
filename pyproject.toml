@@ -1,24 +1,30 @@
-[tool.poetry]
+[project]
 name = "textual-autocomplete"
 version = "3.0.0a13"
 description = "Easily add autocomplete dropdowns to your Textual apps."
-authors = ["Darren Burns <darrenb900@gmail.com>"]
+authors = [
+    { name = "Darren Burns", email = "darrenb900@gmail.com" }
+]
 readme = "README.md"
 packages = [{ include = "textual_autocomplete" }]
+dependencies = [
+    "textual>=0.86.2",
+    "typing-extensions>=4.5.0"
+]
+requires-python = ">=3.8.1"
 
-[tool.poetry.dependencies]
-python = "^3.8.1"
-#textual = {path="../textual", develop=true}
-textual = ">=0.86.2"
-typing-extensions = "^4.5.0"
+[tool.uv]
+dev-dependencies = [
+    "mypy",
+    "textual-dev"
+]
 
-[tool.poetry.group.dev.dependencies]
-mypy = "^0.991"
-black = "^22.10.0"
-textual = { version = ">=0.58.1", extras = ["dev"] }
-ward = { version = "^0.67.2b0", allow-prereleases = true }
-textual-dev = "^1.5.1"
+[tool.hatch.build.targets.wheel]
+packages = ["textual_autocomplete"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
