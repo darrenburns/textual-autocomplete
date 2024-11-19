@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
 import functools
 from operator import itemgetter
 import types
@@ -122,7 +121,6 @@ class AutoComplete(Widget):
     DEFAULT_CSS = """\
     AutoComplete {
         layer: textual-autocomplete;
-        dock: top;  /* if we dont dock, it appears behind docked widgets */
         height: auto;
         width: auto;
         max-height: 12;
