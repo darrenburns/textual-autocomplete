@@ -4,14 +4,13 @@
   ...
 }: let
   package = builtins.fromTOML (builtins.readFile ./pyproject.toml);
-  project = package.tool.poetry;
 in
   pkgs.python312Packages.buildPythonPackage {
-    pname = project.name;
-    version = project.version;
+    pname = package.project.name;
+    version = package.project.version;
     pyproject = true;
     src = ./.;
-    build-system = [pkgs.python312Packages.poetry-core];
+    build-system = [pkgs.python312Packages.hatchling];
     dependencies = with pkgs.python312Packages; [
       python
       (textual.overridePythonAttrs (old: rec {
@@ -30,7 +29,7 @@ in
       typing-extensions
     ];
     meta = {
-      description = project.description;
+      description = package.project.description;
       homepage = "https://github.com/darrenburns/textual-autocomplete";
       license = lib.licenses.mit;
     };
