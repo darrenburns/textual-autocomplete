@@ -237,9 +237,7 @@ AutoComplete {
                 self.input.cursor_position = new_state.cursor_position
 
             self.dropdown.display = False
-            self.post_message(
-                self.Selected(item=self.dropdown.selected_item)
-            )
+            self.post_message(self.Selected(item=self.dropdown.selected_item))
 
     class Selected(Message):
         def __init__(self, item: DropdownItem):
@@ -430,9 +428,8 @@ Dropdown .autocomplete--selection-cursor {
         x, y, width, height = self.input_widget.content_region
         line_below_cursor = y + 1 + scroll_target_adjust_y
 
-        cursor_screen_position = x + (
-            input_cursor_position - self.input_widget.view_position
-        )
+        x_offset, _ = self.input_widget.scroll_offset
+        cursor_screen_position = x + (input_cursor_position - x_offset)
         self.styles.margin = (
             line_below_cursor,
             right,
