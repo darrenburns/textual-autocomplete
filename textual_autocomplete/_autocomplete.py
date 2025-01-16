@@ -430,9 +430,8 @@ Dropdown .autocomplete--selection-cursor {
         x, y, width, height = self.input_widget.content_region
         line_below_cursor = y + 1 + scroll_target_adjust_y
 
-        cursor_screen_position = x + (
-            input_cursor_position - self.input_widget.view_position
-        )
+        x_offset, _ = self.input_widget.scroll_offset
+        cursor_screen_position = x + (input_cursor_position - x_offset)
         self.styles.margin = (
             line_below_cursor,
             right,
