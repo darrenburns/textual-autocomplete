@@ -135,6 +135,7 @@ class AutoComplete(Widget):
             margin: 0;
             scrollbar-size-vertical: 1;
             scrollbar-size-horizontal: 0;
+            text-wrap: nowrap;
             &:focus {
                 border: none;
                 padding: 0;
@@ -224,7 +225,7 @@ class AutoComplete(Widget):
         self._patch_on_event()
 
     def compose(self) -> ComposeResult:
-        option_list = AutoCompleteList(wrap=False)
+        option_list = AutoCompleteList()
         option_list.can_focus = False
         yield option_list
 
