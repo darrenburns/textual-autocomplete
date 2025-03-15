@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import functools
-import inspect
 from operator import itemgetter
-import types
 from typing import (
     Callable,
     ClassVar,
@@ -194,16 +191,8 @@ class AutoComplete(Widget):
         self.prevent_default_tab = prevent_default_tab
         """Prevent the default tab behavior."""
 
-        self.last_action_was_completion = False
-        """Used to filter duplicate performing an action twice on a character insertion.
-        An insertion/deletion moves the cursor and creates a "changed" event, so we end up
-        with two events for the same action.
-        """
-
         self._target_state = TargetState("", Selection.cursor((0, 0)))
         """Cached state of the target Input/TextArea."""
-
-        self._patch_on_event()
 
     def compose(self) -> ComposeResult:
         option_list = AutoCompleteList()
@@ -219,25 +208,6 @@ class AutoComplete(Widget):
         )
         self._subscribe_to_target()
         self._handle_target_update()
-
-    def _patch_on_event(self) -> None:
-        target = self.target
-        if isinstance(target, TextArea):
-            original_on_event = target.on_event
-
-            @functools.wraps(original_on_event)
-            async def on_event(text_area: TextArea, event: events.Event) -> None:
-                if (
-                    isinstance(event, events.Key)
-                    and event.key in {"tab", "enter"}
-                    and self.styles.display != "none"
-                ):
-                    self._complete(self.option_list.highlighted or 0)
-                    return
-                return await original_on_event(event)
-
-            bound_on_event = types.MethodType(on_event, target)
-            setattr(target, "on_event", bound_on_event)
 
     def _listen_to_messages(self, event: events.Event) -> None:
         """Listen to some events of the target widget."""
@@ -302,14 +272,14 @@ class AutoComplete(Widget):
                 self.action_hide()
 
         if isinstance(event, (Input.Changed, TextArea.Changed)):
+            # We suppress Changed events from the target widget, so that we don't
+            # handle change events as a result of performing a completion.
             self._handle_target_update()
 
     def action_hide(self) -> None:
-        print("setting styles.display to none")
         self.styles.display = "none"
 
     def action_show(self) -> None:
-        print("setting styles.display to block")
         self.styles.display = "block"
 
     def _complete(self, option_index: int) -> None:
@@ -317,7 +287,6 @@ class AutoComplete(Widget):
 
         This is when the user highlights an option in the dropdown and presses tab or enter.
         """
-        print("_complete called")
         if not self.display or self.option_list.option_count == 0:
             return
 
@@ -329,11 +298,10 @@ class AutoComplete(Widget):
         highlighted_value = option.main.plain
         if isinstance(target, Input):
             if completion_strategy is None:
-                print("completion_strategy is None")
-                target.value = ""
-                target.insert_text_at_cursor(highlighted_value)
+                with self.prevent(Input.Changed, TextArea.Changed):
+                    target.value = ""
+                    target.insert_text_at_cursor(highlighted_value)
             elif callable(completion_strategy):
-                print("completion_strategy is callable")
                 completion_strategy(
                     highlighted_value,
                     self._get_target_state(),
@@ -351,7 +319,6 @@ class AutoComplete(Widget):
         # Set a flag indicating that the last action that was performed
         # was a completion. This is so that when the target posts a Changed message
         # as a result of this completion, we can opt to ignore it in `handle_target_updated`
-        self.last_action_was_completion = True
         self.action_hide()
 
     def yield_characters_before_cursor(
@@ -404,10 +371,6 @@ class AutoComplete(Widget):
             self.watch(target, "cursor_position", self._align_to_target)
         else:
             self.watch(target, "selection", self._align_to_target)
-
-    def _handle_target_message(self, message: events.Event) -> None:
-        if isinstance(message, (Input.Changed, TextArea.Changed)):
-            self._handle_target_update()
 
     def _align_to_target(self) -> None:
         cursor_x, cursor_y = self.target.cursor_screen_offset
@@ -462,8 +425,6 @@ class AutoComplete(Widget):
         else:
             self.action_hide()
 
-        self.last_action_was_completion = False
-
     def should_show_dropdown(self, search_string: str) -> bool:
         """
         Determine whether to show or hide the dropdown based on the current state.
@@ -479,11 +440,7 @@ class AutoComplete(Widget):
         option_list = self.option_list
         option_count = option_list.option_count
 
-        if (
-            self.last_action_was_completion
-            or len(search_string) == 0
-            or option_count == 0
-        ):
+        if len(search_string) == 0 or option_count == 0:
             return False
         elif option_count == 1:
             first_option = option_list.get_option_at_index(0).prompt
