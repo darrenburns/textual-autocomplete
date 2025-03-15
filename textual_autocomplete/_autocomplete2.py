@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import functools
+import inspect
 from operator import itemgetter
 import types
 from typing import (
@@ -14,20 +15,20 @@ from typing import (
     Union,
     cast,
 )
-from rich.measure import Measurement
-from rich.style import Style
-from rich.text import Text, TextType
-from textual import events
+from rich.text import Text
+from textual import events, on
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.command import on
+from textual.content import Content
 from textual.css.query import NoMatches
-from textual_autocomplete.matcher import Matcher
 from textual.geometry import Region, Spacing
+from textual.style import Style
 from textual.widget import Widget
 from textual.widgets import Input, TextArea, OptionList
 from textual.widgets.option_list import Option
 from textual.widgets.text_area import Location, Selection
+
+from textual_autocomplete.matcher import Matcher
 
 
 @dataclass
@@ -52,9 +53,8 @@ class InvalidTarget(Exception):
 class DropdownItem(Option):
     def __init__(
         self,
-        main: TextType,
-        left_meta: TextType | None = None,
-        # popup: TextType | None = None,
+        main: str | Content,
+        left_meta: str | Content | None = None,
         id: str | None = None,
         disabled: bool = False,
     ) -> None:
@@ -75,37 +75,18 @@ class DropdownItem(Option):
                 display in the dropdown, then you can customise the highlighting of the returned
                 candidates by supplying index ranges to highlight.
         """
-        self.main = Text(main, no_wrap=True) if isinstance(main, str) else main
-        self.left_meta = (
-            Text(left_meta, no_wrap=True, style="dim")
-            if isinstance(left_meta, str)
-            else left_meta
-        )
-        # self.popup = (
-        #     Text(popup, no_wrap=True, style="dim") if isinstance(popup, str) else popup
-        # )
+        self.main = Content(main) if isinstance(main, str) else main
+        self.left_meta = Content(left_meta) if isinstance(left_meta, str) else left_meta
         left = self.left_meta
         prompt = self.main
         if left:
-            prompt = Text.assemble(left, " ", self.main)
+            prompt = Content.assemble(left, " ", self.main)
 
         super().__init__(prompt, id, disabled)
 
 
 class AutoCompleteList(OptionList):
-    def get_content_width(self, container: events.Size, viewport: events.Size) -> int:
-        """Get maximum width of options."""
-        console = self.app.console
-        options = console.options
-        max_width = max(
-            (
-                Measurement.get(console, options, option.prompt).maximum
-                for option in self._options
-            ),
-            default=1,
-        )
-        max_width += self.scrollbar_size_vertical
-        return max_width
+    pass
 
 
 MatcherFactoryType = Callable[[str, Optional[Style], bool], Matcher]
@@ -324,9 +305,11 @@ class AutoComplete(Widget):
             self._handle_target_update()
 
     def action_hide(self) -> None:
+        print("setting styles.display to none")
         self.styles.display = "none"
 
     def action_show(self) -> None:
+        print("setting styles.display to block")
         self.styles.display = "block"
 
     def _complete(self, option_index: int) -> None:
@@ -334,6 +317,7 @@ class AutoComplete(Widget):
 
         This is when the user highlights an option in the dropdown and presses tab or enter.
         """
+        print("_complete called")
         if not self.display or self.option_list.option_count == 0:
             return
 
@@ -345,9 +329,11 @@ class AutoComplete(Widget):
         highlighted_value = option.main.plain
         if isinstance(target, Input):
             if completion_strategy is None:
+                print("completion_strategy is None")
                 target.value = ""
                 target.insert_text_at_cursor(highlighted_value)
             elif callable(completion_strategy):
+                print("completion_strategy is callable")
                 completion_strategy(
                     highlighted_value,
                     self._get_target_state(),
@@ -476,13 +462,7 @@ class AutoComplete(Widget):
         else:
             self.action_hide()
 
-        # We've rebuilt the options based on the latest change,
-        # however, if the user made that change via selecting a completion
-        # from the dropdown, then we always want to hide the dropdown.
-        if self.last_action_was_completion:
-            self.last_action_was_completion = False
-            self.action_hide()
-            return
+        self.last_action_was_completion = False
 
     def should_show_dropdown(self, search_string: str) -> bool:
         """
@@ -499,7 +479,11 @@ class AutoComplete(Widget):
         option_list = self.option_list
         option_count = option_list.option_count
 
-        if len(search_string) == 0 or option_count == 0:
+        if (
+            self.last_action_was_completion
+            or len(search_string) == 0
+            or option_count == 0
+        ):
             return False
         elif option_count == 1:
             first_option = option_list.get_option_at_index(0).prompt
@@ -591,8 +575,12 @@ class AutoComplete(Widget):
         if not search_string:
             return candidates
 
-        match_style = self.get_component_rich_style("autocomplete--highlight-match")
-        matcher = self.matcher_factory(search_string, match_style, False)
+        match_style = Style.from_rich_style(
+            self.get_component_rich_style("autocomplete--highlight-match")
+        )
+        matcher = self.matcher_factory(
+            search_string, match_style=match_style, case_sensitive=False
+        )
 
         matches_and_scores: list[tuple[DropdownItem, float]] = []
         append_score = matches_and_scores.append
