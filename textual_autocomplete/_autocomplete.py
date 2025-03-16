@@ -6,6 +6,7 @@ from typing import (
     Callable,
     ClassVar,
     Iterator,
+    Sequence,
     cast,
 )
 from rich.text import Text
@@ -124,7 +125,8 @@ class AutoComplete(Widget):
     def __init__(
         self,
         target: Input | TextArea | str,
-        candidates: list[DropdownItem] | Callable[[TargetState], list[DropdownItem]],
+        candidates: Sequence[DropdownItem | str]
+        | Callable[[TargetState], Sequence[DropdownItem | str]],
         prevent_default_enter: bool = True,
         prevent_default_tab: bool = True,
         name: str | None = None,
@@ -136,7 +138,18 @@ class AutoComplete(Widget):
         self._target = target
         """An Input instance, TextArea instance, or a selector string used to query an Input/TextArea instance.        """
 
-        self.candidates = candidates
+        # Users can supply strings as a convenience for the simplest cases,
+        # so let's convert them to DropdownItems.
+        if isinstance(candidates, Sequence):
+            self.candidates = [
+                candidate
+                if isinstance(candidate, DropdownItem)
+                else DropdownItem(main=candidate)
+                for candidate in candidates
+            ]
+        else:
+            self.candidates = candidates
+
         """The candidates to match on, or a function which returns the candidates to match on."""
 
         self.prevent_default_enter = prevent_default_enter

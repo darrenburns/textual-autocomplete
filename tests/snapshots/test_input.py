@@ -21,6 +21,7 @@ LANGUAGES = [
     "Kotlin",
     "PHP",
 ]
+CANDIDATES = [DropdownItem(lang) for lang in LANGUAGES]
 
 
 class BasicInputAutocomplete(App[None]):
@@ -29,7 +30,7 @@ class BasicInputAutocomplete(App[None]):
         yield input
         yield AutoComplete(
             target=input,
-            candidates=[DropdownItem(lang) for lang in LANGUAGES],
+            candidates=CANDIDATES,
         )
         yield Input(placeholder="Another input which can be focused")
 
@@ -175,6 +176,50 @@ def test_dropdown_tracks_cursor_position(snap_compare):
     async def run_before(pilot: Pilot) -> None:
         await pilot.press(*"ja")
         await pilot.press("down")
+
+
+def test_multiple_autocomplete_dropdowns_on_a_single_input(snap_compare):
+    """Multiple autocomplete dropdowns can be open at the same time on a single input.
+
+    I'm not sure why you'd want to do this. The behaviour is kind of undefined - both
+    dropdowns should appear, but they'll overlap. Let's just ensure we don't crash.
+    """
+
+    class MultipleAutocompleteDropdowns(App[None]):
+        def compose(self) -> ComposeResult:
+            yield (input1 := Input(placeholder="Type here..."))
+            yield AutoComplete(target=input1, candidates=LANGUAGES)
+            yield AutoComplete(
+                target=input1,
+                candidates=["foo", "bar", "java", "javas", "javassss", "jajaja"],
+            )
+
+    async def run_before(pilot: Pilot) -> None:
+        await pilot.press("tab")
+        await pilot.press(*"ja")
+        await pilot.press("down")
+
+    assert snap_compare(MultipleAutocompleteDropdowns(), run_before=run_before)
+
+
+def test_multiple_autocomplete_dropdowns_on_same_screen(snap_compare):
+    """Multiple autocomplete dropdowns can exist on the same screen."""
+
+    class MultipleAutocompleteDropdowns(App[None]):
+        def compose(self) -> ComposeResult:
+            yield (input1 := Input(placeholder="Type here..."))
+            # Setup with strings...
+            yield AutoComplete(target=input1, candidates=LANGUAGES)
+            yield (input2 := Input(placeholder="Also type here..."))
+            # ...and with DropdownItems...
+            yield AutoComplete(target=input2, candidates=CANDIDATES)
+
+    async def run_before(pilot: Pilot) -> None:
+        await pilot.press("tab")
+        await pilot.press(*"ja")
+        await pilot.press("down")
+
+    assert snap_compare(MultipleAutocompleteDropdowns(), run_before=run_before)
 
 
 # TODO: Test that dropdown tracks cursor when scrolling occurs
