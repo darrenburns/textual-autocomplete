@@ -4,6 +4,7 @@ Fuzzy matcher.
 This class is used by the [command palette](/guide/command_palette) to match search terms.
 
 This is the matcher that powers Textual's command palette.
+
 Thanks to Will McGugan for the implementation.
 """
 
@@ -13,11 +14,7 @@ from operator import itemgetter
 from re import IGNORECASE, escape, finditer, search
 from typing import Iterable, NamedTuple
 
-import rich.repr
-
 from textual.cache import LRUCache
-from textual.content import Content
-from textual.visual import Style
 
 
 class _Search(NamedTuple):
@@ -163,71 +160,3 @@ class FuzzySearch:
                 else:
                     push(branch)
                     push(advance_branch)
-
-
-@rich.repr.auto
-class Matcher:
-    """A fuzzy matcher."""
-
-    def __init__(
-        self,
-        query: str,
-        *,
-        match_style: Style | None = None,
-        case_sensitive: bool = False,
-    ) -> None:
-        """Initialise the fuzzy matching object.
-
-        Args:
-            query: A query as typed in by the user.
-            match_style: The style to use to highlight matched portions of a string.
-            case_sensitive: Should matching be case sensitive?
-        """
-        self._query = query
-        self._match_style = Style(reverse=True) if match_style is None else match_style
-        self._case_sensitive = case_sensitive
-        self.fuzzy_search = FuzzySearch()
-
-    @property
-    def query(self) -> str:
-        """The query string to look for."""
-        return self._query
-
-    @property
-    def match_style(self) -> Style:
-        """The style that will be used to highlight hits in the matched text."""
-        return self._match_style
-
-    @property
-    def case_sensitive(self) -> bool:
-        """Is this matcher case sensitive?"""
-        return self._case_sensitive
-
-    def match(self, candidate: str) -> float:
-        """Match the candidate against the query.
-
-        Args:
-            candidate: Candidate string to match against the query.
-
-        Returns:
-            Strength of the match from 0 to 1.
-        """
-        return self.fuzzy_search.match(self.query, candidate)[0]
-
-    def highlight(self, candidate: str) -> Content:
-        """Highlight the candidate with the fuzzy match.
-
-        Args:
-            candidate: The candidate string to match against the query.
-
-        Returns:
-            A [rich.text.Text][`Text`] object with highlighted matches.
-        """
-        content = Content.from_markup(candidate)
-        score, offsets = self.fuzzy_search.match(self.query, candidate)
-        if not score:
-            return content
-        for offset in offsets:
-            if not candidate[offset].isspace():
-                content = content.stylize(self._match_style, offset, offset + 1)
-        return content

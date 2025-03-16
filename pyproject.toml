@@ -16,7 +16,10 @@ requires-python = ">=3.8.1"
 [tool.uv]
 dev-dependencies = [
     "mypy",
-    "textual-dev"
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.24.0",
+    "pytest-textual-snapshot>=1.1.0",
+    "textual-dev",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -28,3 +31,6 @@ allow-direct-references = true
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

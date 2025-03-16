@@ -4,7 +4,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal
 from textual.widgets import TextArea, Label, Button, Header, Footer
 
-from textual_autocomplete._autocomplete2 import AutoComplete, DropdownItem, TargetState
+from textual_autocomplete._autocomplete import AutoComplete, Hit, TargetState
 
 
 class AdvancedAutoCompleteExample(App[None]):
@@ -70,37 +70,37 @@ class AdvancedAutoCompleteExample(App[None]):
                 # Create a list of Python keywords, functions, and methods as dropdown items
                 python_items = [
                     # Keywords
-                    DropdownItem("def", left_meta="kw"),
-                    DropdownItem("class", left_meta="kw"),
-                    DropdownItem("import", left_meta="kw"),
-                    DropdownItem("from", left_meta="kw"),
-                    DropdownItem("if", left_meta="kw"),
-                    DropdownItem("elif", left_meta="kw"),
-                    DropdownItem("else", left_meta="kw"),
-                    DropdownItem("for", left_meta="kw"),
-                    DropdownItem("while", left_meta="kw"),
-                    DropdownItem("try", left_meta="kw"),
-                    DropdownItem("except", left_meta="kw"),
-                    DropdownItem("finally", left_meta="kw"),
-                    DropdownItem("with", left_meta="kw"),
-                    DropdownItem("as", left_meta="kw"),
-                    DropdownItem("return", left_meta="kw"),
+                    Hit("def", left_meta="kw"),
+                    Hit("class", left_meta="kw"),
+                    Hit("import", left_meta="kw"),
+                    Hit("from", left_meta="kw"),
+                    Hit("if", left_meta="kw"),
+                    Hit("elif", left_meta="kw"),
+                    Hit("else", left_meta="kw"),
+                    Hit("for", left_meta="kw"),
+                    Hit("while", left_meta="kw"),
+                    Hit("try", left_meta="kw"),
+                    Hit("except", left_meta="kw"),
+                    Hit("finally", left_meta="kw"),
+                    Hit("with", left_meta="kw"),
+                    Hit("as", left_meta="kw"),
+                    Hit("return", left_meta="kw"),
                     # Built-in functions
-                    DropdownItem("print", left_meta="fn"),
-                    DropdownItem("len", left_meta="fn"),
-                    DropdownItem("range", left_meta="fn"),
-                    DropdownItem("str", left_meta="fn"),
-                    DropdownItem("int", left_meta="fn"),
-                    DropdownItem("float", left_meta="fn"),
-                    DropdownItem("list", left_meta="fn"),
-                    DropdownItem("dict", left_meta="fn"),
-                    DropdownItem("set", left_meta="fn"),
-                    DropdownItem("tuple", left_meta="fn"),
+                    Hit("print", left_meta="fn"),
+                    Hit("len", left_meta="fn"),
+                    Hit("range", left_meta="fn"),
+                    Hit("str", left_meta="fn"),
+                    Hit("int", left_meta="fn"),
+                    Hit("float", left_meta="fn"),
+                    Hit("list", left_meta="fn"),
+                    Hit("dict", left_meta="fn"),
+                    Hit("set", left_meta="fn"),
+                    Hit("tuple", left_meta="fn"),
                     # Common snippets
-                    DropdownItem("def __init__(self):", left_meta="snip"),
-                    DropdownItem('if __name__ == "__main__":', left_meta="snip"),
-                    DropdownItem("for i in range(10):", left_meta="snip"),
-                    DropdownItem(
+                    Hit("def __init__(self):", left_meta="snip"),
+                    Hit('if __name__ == "__main__":', left_meta="snip"),
+                    Hit("for i in range(10):", left_meta="snip"),
+                    Hit(
                         "try:\n    pass\nexcept Exception as e:\n    print(e)",
                         left_meta="snip",
                     ),

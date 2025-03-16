@@ -1,27 +1,15 @@
 from textual_autocomplete._autocomplete import (
-    CompletionStrategy,
-    Dropdown,
-    InputState,
-)
-
-from textual_autocomplete._autocomplete2 import (
     AutoComplete,
+    AutoCompleteList,
     DropdownItem,
+    DropdownItemHit,
     TargetState,
-    InvalidTarget,
-    MatcherFactoryType,
 )
-
-from textual_autocomplete.matcher import Matcher
 
 __all__ = [
     "AutoComplete",
-    "CompletionStrategy",
-    "Dropdown",
+    "AutoCompleteList",
     "DropdownItem",
-    "InputState",
+    "DropdownItemHit",
     "TargetState",
-    "InvalidTarget",
-    "Matcher",
-    "MatcherFactoryType",
 ]

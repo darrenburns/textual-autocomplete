@@ -1,10 +1,10 @@
-"""Two column dropdown example."""
+"""A two-column autocomplete example with heavy styling."""
 
 from textual.app import App, ComposeResult
 from textual.content import Content
 from textual.widgets import Input, Label
 
-from textual_autocomplete._autocomplete2 import AutoComplete, DropdownItem
+from textual_autocomplete._autocomplete import AutoComplete, DropdownItem
 
 # Languages with their popularity rank
 LANGUAGES_WITH_RANK = [
@@ -21,7 +21,9 @@ LANGUAGES_WITH_RANK = [
 # Create dropdown items with two columns: rank and language name
 CANDIDATES = [
     DropdownItem(
-        language,  # Main text to be completed
+        Content.from_markup(
+            f"[italic $text-success]{language}"
+        ),  # Main text to be completed
         left_meta=Content.from_markup(
             f"[$text-primary on $primary-muted] {rank} "
         ),  # Left column showing rank, styled with Textual markup!
