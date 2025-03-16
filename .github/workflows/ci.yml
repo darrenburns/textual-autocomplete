@@ -1,0 +1,32 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "main"
+
+env:
+  PYTEST_ADDOPTS: "--color=yes"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install a specific version of uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.6.3"
+          enable-cache: true
+          
+      - name: Set up Python
+        run: uv python install 3.9
+        
+      - name: Install Dependencies
+        run: uv sync --all-extras --dev
+        
+      - name: Run Tests
+        run: |
+          uv run pytest tests/ 
