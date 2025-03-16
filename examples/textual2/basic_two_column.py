@@ -1,8 +1,7 @@
-"""Advanced dropdown autocomplete with two columns showing language popularity rank."""
+"""Two column dropdown example."""
 
 from textual.app import App, ComposeResult
 from textual.content import Content
-from textual.style import Style
 from textual.widgets import Input, Label
 
 from textual_autocomplete._autocomplete2 import AutoComplete, DropdownItem
@@ -25,13 +24,13 @@ CANDIDATES = [
         language,  # Main text to be completed
         left_meta=Content.from_markup(
             f"[$text-primary on $primary-muted] {rank} "
-        ),  # Left column showing rank
+        ),  # Left column showing rank, styled with Textual markup!
     )
     for rank, language in LANGUAGES_WITH_RANK
 ]
 
 
-class AdvancedAutoCompleteExample(App[None]):
+class TwoColumnAutoCompleteExample(App[None]):
     def compose(self) -> ComposeResult:
         yield Label("Start typing a programming language:")
         text_input = Input(placeholder="Type here...")
@@ -44,5 +43,5 @@ class AdvancedAutoCompleteExample(App[None]):
 
 
 if __name__ == "__main__":
-    app = AdvancedAutoCompleteExample()
+    app = TwoColumnAutoCompleteExample()
     app.run()
