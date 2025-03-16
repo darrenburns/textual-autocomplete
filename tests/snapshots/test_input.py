@@ -98,6 +98,26 @@ def test_summon_by_pressing_down(snap_compare):
     assert snap_compare(BasicInputAutocomplete(), run_before=run_before)
 
 
+def test_summon_by_pressing_down_after_performing_completion(snap_compare):
+    """We can summon the autocomplete dropdown by pressing the down arrow key,
+    and it should be filled based on the current content of the Input.
+
+    In this example, when we resummon the dropdown, the highlighted text should
+    be "Java" - NOT "ja". "Java" is the current content of the input. "ja" was
+    the text we previously performed the completion with.
+
+    There was a bug where the dropdown would contain the pre-completion candidates.
+    """
+
+    async def run_before(pilot: Pilot) -> None:
+        await pilot.press(*"ja")  # Filters down to 2 candidates: JavaScript and Java
+        await pilot.press("down")  # Move cursor over Java.
+        await pilot.press("tab")  # Press tab to complete.
+        await pilot.press("down")  # Press down to summon the dropdown.
+
+    assert snap_compare(BasicInputAutocomplete(), run_before=run_before)
+
+
 def test_hide_after_summoning_by_pressing_escape(snap_compare):
     """Dropdown summoned via down, then escape was pressed to hide it."""
 

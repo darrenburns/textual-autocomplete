@@ -38,7 +38,7 @@ class DropdownItem(Option):
     def __init__(
         self,
         main: str | Content,
-        left_meta: str | Content | None = None,
+        left_column: str | Content | None = None,
         id: str | None = None,
         disabled: bool = False,
     ) -> None:
@@ -52,8 +52,10 @@ class DropdownItem(Option):
                 In an IDE, the `main` (middle) column might contain the name of a function or method.
         """
         self.main = Content(main) if isinstance(main, str) else main
-        self.left_meta = Content(left_meta) if isinstance(left_meta, str) else left_meta
-        left = self.left_meta
+        self.left_column = (
+            Content(left_column) if isinstance(left_column, str) else left_column
+        )
+        left = self.left_column
         prompt = self.main
         if left:
             prompt = Content.assemble(left, self.main)
@@ -87,7 +89,8 @@ class AutoComplete(Widget):
         width: auto;
         max-height: 12;
         display: none;
-        background: $surface-lighten-1;
+        color: $foreground;
+        background: $surface;
 
         & AutoCompleteList {
             width: auto;
@@ -96,25 +99,13 @@ class AutoComplete(Widget):
             padding: 0;
             margin: 0;
             scrollbar-size-vertical: 1;
-            scrollbar-size-horizontal: 0;
             text-wrap: nowrap;
-            &:focus {
-                border: none;
-                padding: 0;
-                margin: 0;
-            }
-            & > .option-list--option-highlighted, & > .option-list--option-hover-highlighted {
-                color: $text;
-                background: $surface-lighten-3 60%;
-            }
-            
         }
 
         & .autocomplete--highlight-match {
-            color: $text;
-            background: transparent;
             text-style: bold;
         }
+
     }
     """
 
@@ -126,7 +117,7 @@ class AutoComplete(Widget):
         self,
         target: Input | TextArea | str,
         candidates: Sequence[DropdownItem | str]
-        | Callable[[TargetState], Sequence[DropdownItem | str]],
+        | Callable[[TargetState], list[DropdownItem]],
         prevent_default_enter: bool = True,
         prevent_default_tab: bool = True,
         name: str | None = None,
@@ -298,6 +289,15 @@ class AutoComplete(Widget):
             with self.prevent(Input.Changed, TextArea.Changed):
                 target.value = ""
                 target.insert_text_at_cursor(value)
+
+                # We need to rebuild here because we've prevented the Changed events
+                # from being sent to the target widget, meaning AutoComplete won't spot
+                # intercept that message, and would not trigger a rebuild like it normally
+                # does when a Changed event is received.
+                new_target_state = self._get_target_state()
+                self._rebuild_options(
+                    new_target_state, self.get_search_string(new_target_state)
+                )
         else:  # elif isinstance(target, TextArea):
             with self.prevent(TextArea.Changed):
                 replacement_range = self.get_text_area_word_bounds_before_cursor(target)
@@ -479,7 +479,11 @@ class AutoComplete(Widget):
     def get_candidates(self, target_state: TargetState) -> list[DropdownItem]:
         """Get the candidates to match against."""
         candidates = self.candidates
-        return candidates(target_state) if callable(candidates) else candidates
+        if isinstance(candidates, Sequence):
+            return list(candidates)
+        else:
+            # candidates is a callable
+            return candidates(target_state)
 
     def get_matches(
         self,
@@ -512,7 +516,7 @@ class AutoComplete(Widget):
                 highlighted = self.apply_highlights(candidate.main, offsets)
                 highlighted_item = DropdownItemHit(
                     main=highlighted,
-                    left_meta=candidate.left_meta,
+                    left_column=candidate.left_column,
                     id=candidate.id,
                     disabled=candidate.disabled,
                 )
@@ -558,7 +562,7 @@ class AutoComplete(Widget):
         """
         # TODO - let's have styles which account for the cursor too
         match_style = Style.from_rich_style(
-            self.get_component_rich_style("autocomplete--highlight-match")
+            self.get_component_rich_style("autocomplete--highlight-match", partial=True)
         )
 
         plain = candidate.plain

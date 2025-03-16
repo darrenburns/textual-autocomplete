@@ -5,30 +5,33 @@ from textual.content import Content
 from textual.widgets import Input, Label
 
 from textual_autocomplete._autocomplete import AutoComplete, DropdownItem
+from examples._headers import headers
 
-# Languages with their popularity rank
-LANGUAGES_WITH_RANK = [
-    (1, "Python"),
-    (2, "JavaScript"),
-    (3, "Java"),
-    (4, "C++"),
-    (5, "TypeScript"),
-    (6, "Go"),
-    (7, "Ruby"),
-    (8, "Rust"),
-]
+# Define a mapping of sections to colors
+SECTION_COLORS = {
+    "Authentication": "$text-success",
+    "Caching": "$text-primary",
+    "Conditionals": "$text-warning",
+    "Connection management": "$text-error",
+    "Content negotiation": "$text-success",
+    "Controls": "$text-accent",
+    "Cookies": "$text-warning",
+    "CORS": "$text-error",
+    # Add fallback color for any other sections
+    "default": "$foreground",
+}
 
 # Create dropdown items with two columns: rank and language name
 CANDIDATES = [
     DropdownItem(
         Content.from_markup(
-            f"[italic $text-success]{language}"
-        ),  # Main text to be completed
-        left_meta=Content.from_markup(
-            f"[$text-primary on $primary-muted] {rank} "
+            f"[italic {SECTION_COLORS.get(header.get('section', 'default'), SECTION_COLORS['default'])}]{header['name']}"
+        ),  # Main text to be completed with color based on section
+        left_column=Content.from_markup(
+            f"[$text-primary on $primary-muted]{i:3} "
         ),  # Left column showing rank, styled with Textual markup!
     )
-    for rank, language in LANGUAGES_WITH_RANK
+    for i, header in enumerate(headers)
 ]
 
 
