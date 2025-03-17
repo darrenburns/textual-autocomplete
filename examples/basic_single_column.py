@@ -3,7 +3,7 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Input, Label
 
-from textual_autocomplete._autocomplete import AutoComplete, DropdownItem
+from textual_autocomplete import AutoComplete, DropdownItem
 
 LANGUAGES = [
     "Python",

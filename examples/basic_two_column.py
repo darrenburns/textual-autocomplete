@@ -4,7 +4,7 @@ from textual.app import App, ComposeResult
 from textual.content import Content
 from textual.widgets import Input, Label
 
-from textual_autocomplete._autocomplete import AutoComplete, DropdownItem
+from textual_autocomplete import AutoComplete, DropdownItem
 
 # Languages with their popularity rank
 LANGUAGES_WITH_RANK = [
