@@ -338,9 +338,15 @@ class AutoComplete(Widget):
         target = self.target
         self.watch(target, "has_focus", self._handle_focus_change)
         if isinstance(target, Input):
-            self.watch(target, "cursor_position", self._align_to_target)
+            self.watch(target, "selection", self._align_and_rebuild)
         else:
-            self.watch(target, "selection", self._align_to_target)
+            self.watch(target, "selection", self._align_and_rebuild)
+
+    def _align_and_rebuild(self) -> None:
+        self._align_to_target()
+        self._target_state = self._get_target_state()
+        search_string = self.get_search_string(self._target_state)
+        self._rebuild_options(self._target_state, search_string)
 
     def _align_to_target(self) -> None:
         """Align the dropdown to the position of the cursor within
@@ -453,7 +459,9 @@ class AutoComplete(Widget):
             The search string that will be used to filter the dropdown options.
         """
         if isinstance(self.target, Input):
-            return target_state.text
+            column = target_state.selection.end[1]
+            search_string = target_state.text[:column]
+            return search_string
         else:
             start, end = self.get_text_area_word_bounds_before_cursor(self.target)
             search_string = self.target.get_text_range(start, end)
