@@ -240,7 +240,3 @@ def test_multiple_autocomplete_dropdowns_on_same_screen(snap_compare):
         await pilot.press("down")
 
     assert snap_compare(MultipleAutocompleteDropdowns(), run_before=run_before)
-
-
-# TODO: Test that dropdown tracks cursor when scrolling occurs
-# TODO: Test the dropdown tracks cursor when cursor moves via other means

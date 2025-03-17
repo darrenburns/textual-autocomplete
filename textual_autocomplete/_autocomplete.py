@@ -89,8 +89,6 @@ class AutoComplete(Widget):
         width: auto;
         max-height: 12;
         display: none;
-        color: $foreground;
-        background: $surface;
 
         & AutoCompleteList {
             width: auto;
@@ -100,6 +98,8 @@ class AutoComplete(Widget):
             margin: 0;
             scrollbar-size-vertical: 1;
             text-wrap: nowrap;
+            color: $foreground;
+            background: $surface;
         }
 
         & .autocomplete--highlight-match {
