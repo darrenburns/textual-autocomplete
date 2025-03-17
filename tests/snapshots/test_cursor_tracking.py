@@ -36,7 +36,7 @@ class CursorTracking(App[None]):
 def test_dropdown_tracks_cursor_when_parent_scrolls(snap_compare):
     """We type, the dropdown appears, then we scroll, and the dropdown tracks the cursor."""
 
-    async def run_before(pilot: Pilot) -> None:
+    async def run_before(pilot: Pilot[None]) -> None:
         await pilot.press("b")
         scrollable = pilot.app.query_one("#scrollable")
         scrollable.scroll_relative(x=5, y=5, animate=False, force=True)
