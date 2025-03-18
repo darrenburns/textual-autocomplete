@@ -137,22 +137,31 @@ if __name__ == "__main__":
 The dropdown can be styled using Textual CSS:
 
 ```css
-InputAutoComplete {
-    max-height: 10;  /* The height at which scrollbars will start being shown */
-    background: $success-muted;
-    border-left: solid $success;
+    InputAutoComplete {
+        /* Customize the dropdown */
+        & AutoCompleteList {
+            max-height: 6;  /* The number of lines before scrollbars appear */
+            color: $text-primary;  /* The color of the text */
+            background: $primary-muted;  /* The background color of the dropdown */
+            border-left: wide $success;  /* The color of the left border */
+        }
 
-    & AutoCompleteList {
-        color: $text-success;
-    }
+        /* Customize the matching substring highlighting */
+        & .autocomplete--highlight-match {
+            color: $text-accent;
+            text-style: bold;
+        }
 
-    /* Customize the matching substring highlighting */
-    & .autocomplete--highlight-match {
-        color: $accent;
-        text-style: bold;
+        /* Customize the text the cursor is over */
+        & .option-list--option-highlighted {
+            color: $text-success;
+            background: $error 50%;  /* 50% opacity, blending into background */
+            text-style: italic;  
+        }
     }
-}
 ```
+
+<img width="226" alt="image" src="https://github.com/user-attachments/assets/3fae3ecf-fdd3-4ff5-ac37-7ef3088c596e" />
 
 ## Dynamic Data with Callbacks
 
