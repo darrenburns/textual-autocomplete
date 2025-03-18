@@ -63,10 +63,10 @@ from textual_autocomplete import InputAutoComplete, DropdownItem
 
 # Create dropdown items with a left metadata column.
 ITEMS = [
-    DropdownItem(main="Python", left_column="🐍"),
-    DropdownItem(main="JavaScript", left_column="📜"),
-    DropdownItem(main="TypeScript", left_column="🔷"),
-    DropdownItem(main="Java", left_column="☕"),
+    DropdownItem(main="Python", prefix="🐍"),
+    DropdownItem(main="JavaScript", prefix="📜"),
+    DropdownItem(main="TypeScript", prefix="🔷"),
+    DropdownItem(main="Java", prefix="☕"),
 ]
 
 class LanguageSearcher(App):
@@ -102,13 +102,13 @@ LANGUAGES_WITH_RANK = [
     (8, "Rust"),
 ]
 
-# Create dropdown items with styled rank in left column
+# Create dropdown items with styled rank in prefix
 CANDIDATES = [
     DropdownItem(
         language,  # Main text to be completed
-        left_column=Content.from_markup(
-            f"[$text-primary on $primary-muted] {rank} "
-        ),  # Left column with styled rank
+        prefix=Content.from_markup(
+            f"[$text-primary on $primary-muted] {rank:>2} "
+        ),  # Prefix with styled rank
     )
     for rank, language in LANGUAGES_WITH_RANK
 ]
@@ -170,14 +170,14 @@ consistent across different themes. Here's the same dropdown with the Textual ap
 
 <img width="234" alt="image" src="https://github.com/user-attachments/assets/6bc4804d-7a4b-41ab-bba9-5745d87648b9" />
 
-### Styling the left column
+### Styling the prefix
 
-You can style the left column using Textual Content markup.
+You can style the prefix using Textual Content markup.
 
 ```python
 DropdownItem(
     main="Python",
-    left_column=Content.from_markup(
+    prefix=Content.from_markup(
         "[$text-success on $success-muted] 🐍"
     ),
 )
@@ -189,7 +189,7 @@ Instead of supplying a static list of candidates, you can supply a callback func
 
 This callback function will be called anytime the text in the target input widget changes.
 
-The app below displays the length of the text in the input widget in the left column of the dropdown items.
+The app below displays the length of the text in the input widget in the prefix of the dropdown items.
 
 ```python
 from textual.app import App, ComposeResult
@@ -208,7 +208,7 @@ class DynamicDataApp(App[None]):
     def get_candidates(self, state: TargetState) -> list[DropdownItem]:
         left = len(state.text)
         return [
-            DropdownItem(item, left_column=f"{left:>2} ")
+            DropdownItem(item, prefix=f"{left:>2} ")
             for item in [
                 "Apple",
                 "Banana",
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     app.run()
 ```
 
-Notice the count displayed in the left column increment and decrement based on the character count in the input.
+Notice the count displayed in the prefix increment and decrement based on the character count in the input.
 
 ![Screen Recording 2025-03-18 at 18 26 42](https://github.com/user-attachments/assets/ca0e039b-8ae0-48ac-ba96-9ec936720ded)
 

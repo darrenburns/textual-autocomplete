@@ -20,7 +20,7 @@ Input {
     def get_candidates(self, state: TargetState) -> list[DropdownItem]:
         left = len(state.text)
         return [
-            DropdownItem(item, left_column=f"{left:>2} ")
+            DropdownItem(item, prefix=f"{left:>2} ")
             for item in [
                 "Apple",
                 "Banana",

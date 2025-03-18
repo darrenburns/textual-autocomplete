@@ -30,9 +30,9 @@ CANDIDATES = [
                 str(header.get("section", "default")), SECTION_COLORS["default"]
             ),
         ),  # Main text to be completed with color based on section
-        left_column=Content.from_markup(
+        prefix=Content.from_markup(
             "[$text-primary on $primary-muted] $number", number=f"{i:<3}"
-        ),  # Left column showing rank, styled with Textual markup!
+        ),  # Prefix showing rank, styled with Textual markup!
     )
     for i, header in enumerate(headers)
 ]

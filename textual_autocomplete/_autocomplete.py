@@ -36,7 +36,7 @@ class DropdownItem(Option):
     def __init__(
         self,
         main: str | Content,
-        left_column: str | Content | None = None,
+        prefix: str | Content | None = None,
         id: str | None = None,
         disabled: bool = False,
     ) -> None:
@@ -44,16 +44,16 @@ class DropdownItem(Option):
         Note that this is not a widget, it's simply a data structure for describing dropdown items.
 
         Args:
-            left: The left column will often contain an icon/symbol, the main (middle)
+            left: The prefix will often contain an icon/symbol, the main (middle)
                 column contains the text that represents this option.
             main: The main text representing this option - this will be highlighted by default.
                 In an IDE, the `main` (middle) column might contain the name of a function or method.
         """
         self.main = Content(main) if isinstance(main, str) else main
-        self.left_column = (
-            Content(left_column) if isinstance(left_column, str) else left_column
+        self.prefix = (
+            Content(prefix) if isinstance(prefix, str) else prefix
         )
-        left = self.left_column
+        left = self.prefix
         prompt = self.main
         if left:
             prompt = Content.assemble(left, self.main)
@@ -470,7 +470,7 @@ class InputAutoComplete(Widget):
                 highlighted = self.apply_highlights(candidate.main, offsets)
                 highlighted_item = DropdownItemHit(
                     main=highlighted,
-                    left_column=candidate.left_column,
+                    prefix=candidate.prefix,
                     id=candidate.id,
                     disabled=candidate.disabled,
                 )

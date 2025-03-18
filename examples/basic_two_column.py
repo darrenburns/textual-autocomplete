@@ -1,4 +1,4 @@
-"""Two column dropdown example with simple styling on the left column."""
+"""Two column dropdown example with simple styling on the prefix."""
 
 from textual.app import App, ComposeResult
 from textual.content import Content
@@ -22,9 +22,9 @@ LANGUAGES_WITH_RANK = [
 CANDIDATES = [
     DropdownItem(
         language,  # Main text to be completed
-        left_column=Content.from_markup(
+        prefix=Content.from_markup(
             f"[$text-primary on $primary-muted] {rank} "
-        ),  # Left column showing rank, styled with Textual markup!
+        ),  # Prefix showing rank, styled with Textual markup!
     )
     for rank, language in LANGUAGES_WITH_RANK
 ]

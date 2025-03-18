@@ -8,17 +8,17 @@ from textual_autocomplete import InputAutoComplete, DropdownItem
 LANGUAGES = [
     DropdownItem(
         "Python",
-        left_column=Content.from_markup("[$text-success on $success-muted] 🐍 "),
+        prefix=Content.from_markup("[$text-success on $success-muted] 🐍 "),
     ),
     DropdownItem(
         "Golang",
-        left_column=Content.from_markup("[$text-primary on $primary-muted] 🔷 "),
+        prefix=Content.from_markup("[$text-primary on $primary-muted] 🔷 "),
     ),
     DropdownItem(
-        "Java", left_column=Content.from_markup("[#6a2db5 on magenta 20%] ☕ ")
+        "Java", prefix=Content.from_markup("[#6a2db5 on magenta 20%] ☕ ")
     ),
     DropdownItem(
-        "Rust", left_column=Content.from_markup("[$text-accent on $accent-muted] 🦀 ")
+        "Rust", prefix=Content.from_markup("[$text-accent on $accent-muted] 🦀 ")
     ),
 ]
 
