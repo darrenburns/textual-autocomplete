@@ -2,7 +2,6 @@
 
 from textual.app import App, ComposeResult
 from textual.content import Content
-from textual.style import Style
 from textual.widgets import Input, Label
 
 from textual_autocomplete import AutoComplete, DropdownItem
