@@ -230,28 +230,6 @@ Notice the count displayed in the prefix increment and decrement based on the ch
 
 ![Screen Recording 2025-03-18 at 18 26 42](https://github.com/user-attachments/assets/ca0e039b-8ae0-48ac-ba96-9ec936720ded)
 
-## Events
-
-Listen for selection events:
-
-```python
-from textual.app import App, ComposeResult
-from textual.widgets import Input, Label
-from textual_autocomplete import InputAutoComplete
-
-class EventApp(App):
-    def compose(self) -> ComposeResult:
-        self.result = Label("Nothing selected yet")
-        yield self.result
-        input_widget = Input()
-        yield input_widget
-        yield InputAutoComplete(input_widget, candidates=["Apple", "Banana", "Cherry"])
-    
-    def on_input_auto_complete_selected(self, event):
-        """Called when an item is selected from the dropdown"""
-        self.result.update(f"Selected: {event.value}")
-```
-
 ## More Examples
 
 Check out the [examples directory](./examples) for more runnable examples.
