@@ -1,4 +1,4 @@
-# textual-autocomplete
+![Screen Recording 2025-03-18 at 18 26 42](https://github.com/user-attachments/assets/48ab7488-1bca-4b65-9cc9-4f4c143df2c7)# textual-autocomplete
 
 A simple autocomplete dropdown library for [Textual](https://github.com/textualize/textual) `Input` widgets.
 
@@ -213,7 +213,9 @@ if __name__ == "__main__":
     app.run()
 ```
 
+Notice the count displayed in the left column increment and decrement based on the character count in the input.
 
+![Screen Recording 2025-03-18 at 18 26 42](https://github.com/user-attachments/assets/ca0e039b-8ae0-48ac-ba96-9ec936720ded)
 
 ## Events
 
