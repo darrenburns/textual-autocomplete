@@ -6,7 +6,7 @@ Compatible with **Textual 2.0 and above**.
 
 ## Installation
 
-I recommend installing via [uv](https://docs.astral.sh/uv/):
+I recommend using [uv](https://docs.astral.sh/uv/) to manage your dependencies and install `textual-autocomplete`:
 
 ```bash
 uv add textual-autocomplete
@@ -226,7 +226,9 @@ if __name__ == "__main__":
     app.run()
 ```
 
+Notice the count displayed in the left column increment and decrement based on the character count in the input.
 
+![Screen Recording 2025-03-18 at 18 26 42](https://github.com/user-attachments/assets/ca0e039b-8ae0-48ac-ba96-9ec936720ded)
 
 ## Events
 
