@@ -170,6 +170,19 @@ consistent across different themes. Here's the same dropdown with the Textual ap
 
 <img width="234" alt="image" src="https://github.com/user-attachments/assets/6bc4804d-7a4b-41ab-bba9-5745d87648b9" />
 
+### Styling the left column
+
+You can style the left column using Textual Content markup.
+
+```python
+DropdownItem(
+    main="Python",
+    left_column=Content.from_markup(
+        "[$text-success on $success-muted] 🐍"
+    ),
+)
+```
+
 ## Dynamic Data with Callbacks
 
 Instead of supplying a static list of candidates, you can supply a callback function which returns a list of `DropdownItem` (candidates) that will be searched against.
@@ -239,12 +252,7 @@ class EventApp(App):
 
 ## More Examples
 
-Check out the [examples directory](./examples) for more advanced usage patterns, including:
-
-- Color-coded categories
-- Dynamic data sources
-- Complex filtering logic
-- Custom matching algorithms
+Check out the [examples directory](./examples) for more runnable examples.
 
 ## Contributing
 
