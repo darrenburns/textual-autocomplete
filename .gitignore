@@ -160,3 +160,4 @@ cython_debug/
 .idea/
 
 snapshot_report.html
+sandbox/

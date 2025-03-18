@@ -87,6 +87,7 @@ class InputAutoComplete(Widget):
         width: auto;
         max-height: 12;
         display: none;
+        background: $surface;
 
         & AutoCompleteList {
             width: auto;
@@ -97,7 +98,7 @@ class InputAutoComplete(Widget):
             scrollbar-size-vertical: 1;
             text-wrap: nowrap;
             color: $foreground;
-            background: $surface;
+            background: transparent;
         }
 
         & .autocomplete--highlight-match {
@@ -116,6 +117,7 @@ class InputAutoComplete(Widget):
         target: Input | str,
         candidates: Sequence[DropdownItem | str]
         | Callable[[TargetState], list[DropdownItem]],
+        *,
         prevent_default_enter: bool = True,
         prevent_default_tab: bool = True,
         name: str | None = None,

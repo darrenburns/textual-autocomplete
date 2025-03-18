@@ -1,9 +1,9 @@
 """Basic dropdown autocomplete from a list of options."""
 
 from textual.app import App, ComposeResult
-from textual.widgets import Input, Label
+from textual.widgets import Input
 
-from textual_autocomplete import InputAutoComplete, DropdownItem
+from textual_autocomplete import InputAutoComplete
 
 LANGUAGES = [
     "Python",
@@ -16,18 +16,15 @@ LANGUAGES = [
     "Rust",
 ]
 
-CANDIDATES = [DropdownItem(lang) for lang in LANGUAGES]
-
 
 class AutoCompleteExample(App[None]):
     def compose(self) -> ComposeResult:
-        yield Label("Start typing a programming language:")
-        text_input = Input(placeholder="Type here...")
+        text_input = Input(placeholder="Search for a programming language...")
         yield text_input
 
         yield InputAutoComplete(
             target=text_input,  # The widget to attach autocomplete to
-            candidates=CANDIDATES,  # The list of completion candidates
+            candidates=LANGUAGES,  # The list of completion candidates
         )
 
 

@@ -1,123 +1,207 @@
 # textual-autocomplete
 
-textual-autocomplete is a Python library for creating dropdown autocompletion menus in
-Textual applications, allowing users to quickly select from a list of suggestions as
-they type. *textual-autocomplete supports **Textual version 0.14.0** and above.*
+A simple autocomplete dropdown library for [Textual](https://github.com/textualize/textual) `Input` widgets.
 
-<img width="554" alt="image" src="https://user-images.githubusercontent.com/5740731/205718538-5599a9db-48a2-49dd-99c3-34d43459b81a.png">
-
-<details>
-<summary>Video example</summary>
-
-https://user-images.githubusercontent.com/5740731/205718330-a9364894-9133-40ca-8249-6e3dcc13f456.mov
-
-</details>
-
-> **Warning**
-> Textual still has a major version number of `0`, meaning there are still significant API changes happening which can sometimes impact this project.
-> I'll do my best to keep it compatible with the latest version of Textual, but there may be a slight delay between Textual releases and this library working with said release.
-
-## Quickstart
-
-Simply wrap a Textual `Input` widget as follows:
-
-```python
-from textual.app import ComposeResult
-from textual.widgets import Input
-from textual_autocomplete import AutoComplete, Dropdown, DropdownItem
-
-def compose(self) -> ComposeResult:
-    yield AutoComplete(
-        Input(placeholder="Type to search..."),
-        Dropdown(items=[
-            DropdownItem("Glasgow"),
-            DropdownItem("Edinburgh"),
-            DropdownItem("Aberdeen"),
-            DropdownItem("Dundee"),
-        ]),
-    )
-```
-
-There are more complete examples [here](./examples).
+Compatible with **Textual 2.0 and above**.
 
 ## Installation
 
-`textual-autocomplete` can be installed from PyPI using your favourite dependency
-manager.
+I recommend installing via [uv](https://docs.astral.sh/uv/):
 
-## Usage
+```bash
+uv add textual-autocomplete
+```
 
-### Wrapping your `Input`
+If you prefer `pip`, `poetry`, or something else, those will work too.
 
-As shown in the quickstart, you can wrap the Textual builtin `Input` widget with
-`AutoComplete`, and supply a `Dropdown`. 
-The `AutoComplete` manages communication between the `Input` and the `Dropdown`.
+## Quick Start
 
-The `Dropdown` is the widget you see on screen, as you type into the input.
+Here's the simplest possible way to add autocomplete to your Textual app:
 
-The `DropdownItem`s contain up to 3 columns. All must contain a "main" column, which
-is the central column used in the filtering. They can also optionally contain a left and right metadata
-column.
+```python
+from textual.app import App, ComposeResult
+from textual.widgets import Input
+from textual_autocomplete import InputAutoComplete, DropdownItem
 
-### Supplying data to `Dropdown`
+class ColorFinder(App):
+    def compose(self) -> ComposeResult:
+        # Create a standard Textual input
+        text_input = Input(placeholder="Type a color...")
+        yield text_input
+        
+        # Add an autocomplete to the same screen, and pass in the input widget.
+        yield InputAutoComplete(
+            text_input,  # Target input widget
+            candidates=["Red", "Green", "Blue", "Yellow", "Purple", "Orange"]
+        )
 
-You can supply the data for the dropdown via a list or a callback function.
+if __name__ == "__main__":
+    app = ColorFinder()
+    app.run()
+```
 
-#### Using a list
+That's it! As you type in the input field, matching options will appear in a dropdown below.
 
-The easiest way to use textual-autocomplete is to pass in a list of `DropdownItem`s, 
-as shown in the quickstart.
+## Core Features
 
-#### Using a callable
+- 🔍 **Fuzzy matching** - Find matches even with typos
+- ⌨️ **Keyboard navigation** - Arrow keys, Tab, Enter, and Escape
+- 🎨 **Rich styling options** - Customizable highlighting and appearance
+- 📝 **Dynamic content** - Supply items as a list or from a callback function
 
-Instead of passing a list of `DropdownItems`, you can supply a callback function
-which will be called with the current input state. From this function, you should 
-return the list of `DropdownItems` you wish to be displayed.
+## Examples
 
-See [here](./examples/custom_meta.py) for a usage example.
+### With Left Metadata Column
 
-### Keyboard control
+Add a metadata column (like icons) to provide additional context.
+These columns are display-only, and do not influence the search process.
 
-- Press the Up/Down arrow keys to navigate.
-- Press Enter to select the item in the dropdown and fill it in.
-- Press Tab to fill in the selected item, and move focus.
-- Press Esc to hide the dropdown.
-- Press the Up/Down arrow keys to force the dropdown to appear.
+```python
+from textual.app import App, ComposeResult
+from textual.widgets import Input
+from textual_autocomplete import InputAutoComplete, DropdownItem
 
-### Styling
+# Create dropdown items with a left metadata column.
+ITEMS = [
+    DropdownItem(main="Python", left_column="🐍"),
+    DropdownItem(main="JavaScript", left_column="📜"),
+    DropdownItem(main="TypeScript", left_column="🔷"),
+    DropdownItem(main="Java", left_column="☕"),
+]
 
-The `Dropdown` itself can be styled using Textual CSS.
+class LanguageSearcher(App):
+    def compose(self) -> ComposeResult:
+        text_input = Input(placeholder="Programming language...")
+        yield text_input
+        yield InputAutoComplete(text_input, candidates=ITEMS)
 
-For more fine-grained control over styling, you can target the following CSS classes:
+if __name__ == "__main__":
+    app = LanguageSearcher()
+    app.run()
+```
 
-- `.autocomplete--highlight-match`: the highlighted portion of a matching item
-- `.autocomplete--selection-cursor`: the item the selection cursor is on
-- `.autocomplete--left-column`: the left metadata column, if it exists
-- `.autocomplete--right-column`: the right metadata column, if it exists
+### Styled Two-Column Layout
 
-Since the 3 columns in `DropdownItem` support Rich `Text` objects, they can be styled dynamically.
-The [custom_meta.py](./examples/custom_meta.py) file is an example of this, showing how the rightmost column is coloured dynamically based on the city population.
+Add rich styling to your metadata columns using [Textual markup](https://textual.textualize.io/guide/content/#markup).
 
-The [examples directory](./examples) contains multiple examples of custom styling.
+```python
+from textual.app import App, ComposeResult
+from textual.content import Content
+from textual.widgets import Input, Label
+from textual_autocomplete import InputAutoComplete, DropdownItem
 
-### Messages
+# Languages with their popularity rank
+LANGUAGES_WITH_RANK = [
+    (1, "Python"),
+    (2, "JavaScript"),
+    (3, "Java"),
+    (4, "C++"),
+    (5, "TypeScript"),
+    (6, "Go"),
+    (7, "Ruby"),
+    (8, "Rust"),
+]
 
-When you select an item in the dropdown, an `AutoComplete.Selected` event is emitted.
+# Create dropdown items with styled rank in left column
+CANDIDATES = [
+    DropdownItem(
+        language,  # Main text to be completed
+        left_column=Content.from_markup(
+            f"[$text-primary on $primary-muted] {rank} "
+        ),  # Left column with styled rank
+    )
+    for rank, language in LANGUAGES_WITH_RANK
+]
 
-You can declare a handler for this event `on_auto_complete_selected(self, event)` to respond
-to an item being selected.
+class LanguageSearcher(App):
+    def compose(self) -> ComposeResult:
+        yield Label("Start typing a programming language:")
+        text_input = Input(placeholder="Type here...")
+        yield text_input
+        yield InputAutoComplete(target=text_input, candidates=CANDIDATES)
 
-An item is selected when it's highlighted in the dropdown, and you press Enter or Tab.
+if __name__ == "__main__":
+    app = LanguageSearcher()
+    app.run()
+```
 
-Pressing Enter simply fills the value in the dropdown, whilst Tab fills the value
-and then shifts focus from the input.
+## Keyboard Controls
 
-## Other notes
+- **↑/↓** - Navigate through options
+- **↓** - Summon the dropdown
+- **Enter/Tab** - Complete the selected option
+- **Escape** - Hide dropdown
 
-- textual-autocomplete will create a new layer at runtime on the `Screen` that the `AutoComplete` is on. The `Dropdown` will be rendered on this layer.
-- The position of the dropdown is currently fixed _below_ the value entered into the `Input`. This means if your `Input` is at the bottom of the screen, it's probably not going to be much use for now. I'm happy to discuss or look at PRs that offer a flag for having it float above.
-- There's currently no special handling for when the dropdown meets the right-hand side of the screen.
-- Do not apply `margin` to the `Dropdown`. The position of the dropdown is updated by applying margin to the top/left of it.
-- There's currently no debouncing support, but I'm happy to discuss or look at PRs for this.
-- There are a few known issues/TODOs in the code, which will later be transferred to GitHub.
-- Test coverage is currently non-existent - sorry!
+## Styling
+
+The dropdown can be styled using Textual CSS:
+
+```css
+InputAutoComplete {
+    max-height: 10;  /* The height at which scrollbars will start being shown */
+    background: $success-muted;
+    border-left: solid $success;
+
+    & AutoCompleteList {
+        color: $text-success;
+    }
+
+    /* Customize the matching substring highlighting */
+    & .autocomplete--highlight-match {
+        color: $accent;
+        text-style: bold;
+    }
+}
+```
+
+## Dynamic Data with Callbacks
+
+For more advanced usage, you can provide a callback function to dynamically generate dropdown items:
+
+```python
+def get_candidates(state):
+    search_term = state.text.lower()
+    results = []
+    for item in ALL_ITEMS:
+        if search_term in item.lower():
+            results.append(DropdownItem(item))
+    return results
+
+# Then in your compose method:
+yield InputAutoComplete(input_widget, candidates=get_candidates)
+```
+
+## Events
+
+Listen for selection events:
+
+```python
+from textual.app import App, ComposeResult
+from textual.widgets import Input, Label
+from textual_autocomplete import InputAutoComplete
+
+class EventApp(App):
+    def compose(self) -> ComposeResult:
+        self.result = Label("Nothing selected yet")
+        yield self.result
+        input_widget = Input()
+        yield input_widget
+        yield InputAutoComplete(input_widget, candidates=["Apple", "Banana", "Cherry"])
+    
+    def on_input_auto_complete_selected(self, event):
+        """Called when an item is selected from the dropdown"""
+        self.result.update(f"Selected: {event.value}")
+```
+
+## More Examples
+
+Check out the [examples directory](./examples) for more advanced usage patterns, including:
+
+- Color-coded categories
+- Dynamic data sources
+- Complex filtering logic
+- Custom matching algorithms
+
+## Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests on GitHub.
