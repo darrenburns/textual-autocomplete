@@ -1,4 +1,4 @@
-![Screen Recording 2025-03-18 at 18 26 42](https://github.com/user-attachments/assets/48ab7488-1bca-4b65-9cc9-4f4c143df2c7)# textual-autocomplete
+# textual-autocomplete
 
 A simple autocomplete dropdown library for [Textual](https://github.com/textualize/textual) `Input` widgets.
 
