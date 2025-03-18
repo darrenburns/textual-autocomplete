@@ -5,7 +5,7 @@ from textual.pilot import Pilot
 from textual.widgets import Input
 from textual.widgets.input import Selection
 
-from textual_autocomplete import AutoComplete, AutoCompleteList, DropdownItem
+from textual_autocomplete import InputAutoComplete, AutoCompleteList, DropdownItem
 
 LANGUAGES = [
     "Python",
@@ -28,7 +28,7 @@ class BasicInputAutocomplete(App[None]):
     def compose(self) -> ComposeResult:
         input = Input(placeholder="Type here...")
         yield input
-        yield AutoComplete(
+        yield InputAutoComplete(
             target=input,
             candidates=CANDIDATES,
         )
@@ -208,8 +208,8 @@ def test_multiple_autocomplete_dropdowns_on_a_single_input(snap_compare):
     class MultipleAutocompleteDropdowns(App[None]):
         def compose(self) -> ComposeResult:
             yield (input1 := Input(placeholder="Type here..."))
-            yield AutoComplete(target=input1, candidates=LANGUAGES)
-            yield AutoComplete(
+            yield InputAutoComplete(target=input1, candidates=LANGUAGES)
+            yield InputAutoComplete(
                 target=input1,
                 candidates=["foo", "bar", "java", "javas", "javassss", "jajaja"],
             )
@@ -229,10 +229,10 @@ def test_multiple_autocomplete_dropdowns_on_same_screen(snap_compare):
         def compose(self) -> ComposeResult:
             yield (input1 := Input(placeholder="Type here..."))
             # Setup with strings...
-            yield AutoComplete(target=input1, candidates=LANGUAGES)
+            yield InputAutoComplete(target=input1, candidates=LANGUAGES)
             yield (input2 := Input(placeholder="Also type here..."))
             # ...and with DropdownItems...
-            yield AutoComplete(target=input2, candidates=CANDIDATES)
+            yield InputAutoComplete(target=input2, candidates=CANDIDATES)
 
     async def run_before(pilot: Pilot[None]) -> None:
         await pilot.press("tab")

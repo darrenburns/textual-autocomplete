@@ -1,5 +1,5 @@
 from textual_autocomplete._autocomplete import (
-    AutoComplete,
+    InputAutoComplete,
     AutoCompleteList,
     DropdownItem,
     DropdownItemHit,
@@ -7,7 +7,7 @@ from textual_autocomplete._autocomplete import (
 )
 
 __all__ = [
-    "AutoComplete",
+    "InputAutoComplete",
     "AutoCompleteList",
     "DropdownItem",
     "DropdownItemHit",

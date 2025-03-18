@@ -3,7 +3,7 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Input, Label
 
-from textual_autocomplete import AutoComplete, DropdownItem
+from textual_autocomplete import InputAutoComplete, DropdownItem
 
 LANGUAGES = [
     "Python",
@@ -25,7 +25,7 @@ class AutoCompleteExample(App[None]):
         text_input = Input(placeholder="Type here...")
         yield text_input
 
-        yield AutoComplete(
+        yield InputAutoComplete(
             target=text_input,  # The widget to attach autocomplete to
             candidates=CANDIDATES,  # The list of completion candidates
         )

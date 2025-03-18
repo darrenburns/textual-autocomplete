@@ -1,6 +1,6 @@
 from textual.app import App, ComposeResult
 from textual.widgets import TextArea, Header, Footer
-from textual_autocomplete import AutoComplete, DropdownItem
+from textual_autocomplete import InputAutoComplete, DropdownItem
 
 
 class TextAreaAutoCompleteExample(App[None]):
@@ -42,7 +42,7 @@ class TextAreaAutoCompleteExample(App[None]):
             DropdownItem(main="pyyaml", left_column="📄"),
         ]
 
-        yield AutoComplete(
+        yield InputAutoComplete(
             target="#code-editor",
             candidates=programming_terms,
         )

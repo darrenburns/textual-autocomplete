@@ -1,20 +1,20 @@
 from textual.app import App, ComposeResult
 from textual.pilot import Pilot
 from textual.widgets import Input
-from textual_autocomplete import AutoComplete
+from textual_autocomplete import InputAutoComplete
 
 
 class StyledAutocomplete(App[None]):
     def compose(self) -> ComposeResult:
         input = Input(placeholder="Search...")
         yield input
-        yield AutoComplete(target=input, candidates=["foo", "bar", "baz", "qux"])
+        yield InputAutoComplete(target=input, candidates=["foo", "bar", "baz", "qux"])
 
 
 def test_foreground_color_and_text_style(snap_compare):
     """Background color should not be impacted by the text foreground and style."""
     StyledAutocomplete.CSS = """
-    AutoComplete {
+    InputAutoComplete {
         & .autocomplete--highlight-match {
             color: $text-accent;
             text-style: bold italic underline;
@@ -30,7 +30,7 @@ def test_foreground_color_and_text_style(snap_compare):
 
 def test_background_color_and_removed_style(snap_compare):
     StyledAutocomplete.CSS = """
-    AutoComplete {
+    InputAutoComplete {
         & .autocomplete--highlight-match {
             color: $text-accent;
             background: $success-muted;
@@ -48,7 +48,7 @@ def test_background_color_and_removed_style(snap_compare):
 def test_max_height_and_scrolling(snap_compare):
     """We should be scrolled to qux, and the red scrollbar should reflect that."""
     StyledAutocomplete.CSS = """
-    AutoComplete {
+    InputAutoComplete {
         & AutoCompleteList {
             scrollbar-color: red;
             max-height: 2;
@@ -65,7 +65,7 @@ def test_max_height_and_scrolling(snap_compare):
 def test_dropdown_styles_match_textual_theme(snap_compare):
     """Dropdown styles should match the textual theme. In this test, we've swapped the theme to nord."""
     StyledAutocomplete.CSS = """
-    AutoComplete {
+    InputAutoComplete {
         & .autocomplete--highlight-match {
             color: $text-accent;
         }
@@ -82,7 +82,7 @@ def test_dropdown_styles_match_textual_theme(snap_compare):
 def test_cursor_color_change_and_dropdown_background_change(snap_compare):
     """Checking various interactions between styles. See the test's CSS for info."""
     StyledAutocomplete.CSS = """
-    AutoComplete {
+    InputAutoComplete {
 
         & AutoCompleteList {
             color: red;

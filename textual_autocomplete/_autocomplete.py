@@ -75,13 +75,13 @@ class AutoCompleteList(OptionList):
     pass
 
 
-class AutoComplete(Widget):
+class InputAutoComplete(Widget):
     BINDINGS = [
         Binding("escape", "hide", "Hide dropdown", show=False),
     ]
 
     DEFAULT_CSS = """\
-    AutoComplete {
+    InputAutoComplete {
         layer: textual-autocomplete;
         height: auto;
         width: auto;
