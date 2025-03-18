@@ -6,7 +6,7 @@ Compatible with **Textual 2.0 and above**.
 
 ## Installation
 
-I recommend installing via [uv](https://docs.astral.sh/uv/):
+I recommend using [uv](https://docs.astral.sh/uv/) to manage your dependencies and install `textual-autocomplete`:
 
 ```bash
 uv add textual-autocomplete
