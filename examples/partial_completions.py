@@ -9,36 +9,33 @@ of the path based on the current content of the Input. Then, when the user selec
 you could offer a different set of completions based on the new path in the Input.
 """
 
-import os
 from textual.app import App, ComposeResult
-from textual.widgets import Input
+from textual.containers import Container
+from textual.widgets import Input, Label
 
-from textual_autocomplete import DropdownItem, InputAutoComplete, TargetState
+from textual_autocomplete import PathInputAutoComplete
 
 
 class PartialCompletionApp(App[None]):
-    def compose(self) -> ComposeResult:
-        input_widget = Input(placeholder="Enter a path...")
-        yield input_widget
-        yield InputAutoComplete(target=input_widget, candidates=self.get_candidates)
+    CSS = """
+    #container {
+        align: center middle;
+        background: $surface;
+        padding: 2 4;
+        height: 60vh;
+        width: 67vw;
+    }
+    Input {
+        width: 80%;
+    }
+    """
 
-    def get_candidates(self, state: TargetState) -> list[DropdownItem]:
-        maybe_path = state.text
-        print(f"maybe_path: {maybe_path}")
-    
-        # If the input is empty, offer completions for all files/directories in the current directory.
-        if not maybe_path:
-            cwd_items = [DropdownItem(item) for item in os.listdir(".")]
-            print(f"cwd_items: {cwd_items}")
-            return cwd_items
-        
-        # If the input ends with a slash, offer completions for all files/directories in the given path.
-        if maybe_path.endswith("/") and os.path.exists(maybe_path):
-            path_items = [DropdownItem(item) for item in os.listdir(maybe_path)]
-            print(f"path_items: {path_items}")
-            return path_items
-        
-        return []
+    def compose(self) -> ComposeResult:
+        with Container(id="container"):
+            yield Label("Choose a file!")
+            input_widget = Input(placeholder="Enter a path...")
+            yield input_widget
+        yield PathInputAutoComplete(target=input_widget)
 
 
 if __name__ == "__main__":

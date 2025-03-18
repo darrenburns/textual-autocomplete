@@ -50,9 +50,7 @@ class DropdownItem(Option):
                 In an IDE, the `main` (middle) column might contain the name of a function or method.
         """
         self.main = Content(main) if isinstance(main, str) else main
-        self.prefix = (
-            Content(prefix) if isinstance(prefix, str) else prefix
-        )
+        self.prefix = Content(prefix) if isinstance(prefix, str) else prefix
         left = self.prefix
         prompt = self.main
         if left:
@@ -116,7 +114,8 @@ class InputAutoComplete(Widget):
         self,
         target: Input | str,
         candidates: Sequence[DropdownItem | str]
-        | Callable[[TargetState], list[DropdownItem]],
+        | Callable[[TargetState], list[DropdownItem]]
+        | None = None,
         *,
         prevent_default_enter: bool = True,
         prevent_default_tab: bool = True,
@@ -132,6 +131,9 @@ class InputAutoComplete(Widget):
                 If a selector is used, remember that widgets are not available until the widget has been mounted (don't
                 use the selector in `compose` - use it in `on_mount` instead).
             candidates: The candidates to match on, or a function which returns the candidates to match on.
+                If set to None, the candidates will be fetched by directly calling the `get_candidates` method,
+                which is what you'll probably want to do if you're subclassing InputAutoComplete and supplying your
+                own custom `get_candidates` method.
             prevent_default_enter: Prevent the default enter behavior. If True, when you select a dropdown option using
                 the enter key, the default behavior (e.g. submitting an Input) will be prevented.
             prevent_default_tab: Prevent the default tab behavior. If True, when you select a dropdown option using
@@ -143,7 +145,7 @@ class InputAutoComplete(Widget):
         # Users can supply strings as a convenience for the simplest cases,
         # so let's convert them to DropdownItems.
         self.candidates: (
-            list[DropdownItem] | Callable[[TargetState], list[DropdownItem]]
+            list[DropdownItem] | Callable[[TargetState], list[DropdownItem]] | None
         )
         """The candidates to match on, or a function which returns the candidates to match on."""
         if isinstance(candidates, Sequence):
@@ -266,10 +268,10 @@ class InputAutoComplete(Widget):
         option = cast(DropdownItem, option_list.get_option_at_index(highlighted))
         highlighted_value = option.value
         self.apply_completion(highlighted_value, self._get_target_state())
+        self.post_completion()
 
-        # Set a flag indicating that the last action that was performed
-        # was a completion. This is so that when the target posts a Changed message
-        # as a result of this completion, we can opt to ignore it in `handle_target_updated`
+    def post_completion(self) -> None:
+        """This method is called after a completion is applied. By default, it simply hides the dropdown."""
         self.action_hide()
 
     def apply_completion(self, value: str, state: TargetState) -> None:
@@ -428,13 +430,20 @@ class InputAutoComplete(Widget):
         # If items is a callable, then it's a factory function that returns the candidates.
         # Otherwise, it's a list of candidates.
         candidates = self.get_candidates(target_state)
-        return self.get_matches(target_state, candidates, search_string)
+        print(f"candidates: {candidates}")
+        matches = self.get_matches(target_state, candidates, search_string)
+        print(f"matches: {matches}")
+        return matches
 
     def get_candidates(self, target_state: TargetState) -> list[DropdownItem]:
         """Get the candidates to match against."""
         candidates = self.candidates
         if isinstance(candidates, Sequence):
             return list(candidates)
+        elif candidates is None:
+            raise NotImplementedError(
+                "You must implement get_candidates in your InputAutoComplete subclass, because candidates is None"
+            )
         else:
             # candidates is a callable
             return candidates(target_state)
