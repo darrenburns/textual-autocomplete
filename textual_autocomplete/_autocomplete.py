@@ -5,7 +5,6 @@ from operator import itemgetter
 from typing import (
     Callable,
     ClassVar,
-    Iterator,
     Sequence,
     cast,
 )
@@ -18,9 +17,8 @@ from textual.css.query import NoMatches
 from textual.geometry import Region, Spacing
 from textual.style import Style
 from textual.widget import Widget
-from textual.widgets import Input, TextArea, OptionList
+from textual.widgets import Input, OptionList
 from textual.widgets.option_list import Option
-from textual.widgets.text_area import Location, Selection
 
 from textual_autocomplete.fuzzy_search import FuzzySearch
 
@@ -30,8 +28,8 @@ class TargetState:
     text: str
     """The content in the target widget."""
 
-    selection: Selection
-    """The selection of the target widget."""
+    cursor_position: int
+    """The cursor position in the target widget."""
 
 
 class DropdownItem(Option):
@@ -115,7 +113,7 @@ class AutoComplete(Widget):
 
     def __init__(
         self,
-        target: Input | TextArea | str,
+        target: Input | str,
         candidates: Sequence[DropdownItem | str]
         | Callable[[TargetState], list[DropdownItem]],
         prevent_default_enter: bool = True,
@@ -125,12 +123,27 @@ class AutoComplete(Widget):
         classes: str | None = None,
         disabled: bool = False,
     ) -> None:
+        """An autocomplete widget.
+
+        Args:
+            target: An Input instance or a selector string used to query an Input instance.
+                If a selector is used, remember that widgets are not available until the widget has been mounted (don't
+                use the selector in `compose` - use it in `on_mount` instead).
+            candidates: The candidates to match on, or a function which returns the candidates to match on.
+            prevent_default_enter: Prevent the default enter behavior. If True, when you select a dropdown option using
+                the enter key, the default behavior (e.g. submitting an Input) will be prevented.
+            prevent_default_tab: Prevent the default tab behavior. If True, when you select a dropdown option using
+                the tab key, the default behavior (e.g. moving focus to the next widget) will be prevented.
+        """
         super().__init__(name=name, id=id, classes=classes, disabled=disabled)
         self._target = target
-        """An Input instance, TextArea instance, or a selector string used to query an Input/TextArea instance.        """
 
         # Users can supply strings as a convenience for the simplest cases,
         # so let's convert them to DropdownItems.
+        self.candidates: (
+            list[DropdownItem] | Callable[[TargetState], list[DropdownItem]]
+        )
+        """The candidates to match on, or a function which returns the candidates to match on."""
         if isinstance(candidates, Sequence):
             self.candidates = [
                 candidate
@@ -140,8 +153,6 @@ class AutoComplete(Widget):
             ]
         else:
             self.candidates = candidates
-
-        """The candidates to match on, or a function which returns the candidates to match on."""
 
         self.prevent_default_enter = prevent_default_enter
         """Prevent the default enter behavior. If True, when you select a dropdown option using
@@ -153,8 +164,8 @@ class AutoComplete(Widget):
         the tab key, the default behavior (e.g. moving focus to the next widget) will be prevented.
         """
 
-        self._target_state = TargetState("", Selection.cursor((0, 0)))
-        """Cached state of the target Input/TextArea."""
+        self._target_state = TargetState("", 0)
+        """Cached state of the target Input."""
 
         self._fuzzy_search = FuzzySearch()
         """The default implementation used by AutoComplete.match."""
@@ -201,42 +212,35 @@ class AutoComplete(Widget):
                         # Don't prevent default behavior in this case
                         return
 
-                event.stop()
-                event.prevent_default()
                 # If you press `down` while in an Input and the autocomplete is currently
                 # hidden, then we should show the dropdown.
-                if isinstance(self.target, Input):
-                    if not displayed:
-                        self.display = True
-                        highlighted = 0
-                    else:
-                        highlighted = (highlighted + 1) % option_list.option_count
+                if displayed:
+                    event.prevent_default()
+                    highlighted = (highlighted + 1) % option_list.option_count
                 else:
-                    if displayed:
-                        highlighted = (highlighted + 1) % option_list.option_count
+                    self.display = True
+                    highlighted = 0
 
                 option_list.highlighted = highlighted
 
             elif event.key == "up":
                 if displayed:
-                    event.stop()
                     event.prevent_default()
                     highlighted = (highlighted - 1) % option_list.option_count
                     option_list.highlighted = highlighted
             elif event.key == "enter":
+                print("event in autocomplete:", event)
                 if self.prevent_default_enter and displayed:
-                    event.stop()
                     event.prevent_default()
                 self._complete(option_index=highlighted)
             elif event.key == "tab":
                 if self.prevent_default_tab and displayed:
-                    event.stop()
                     event.prevent_default()
                 self._complete(option_index=highlighted)
             elif event.key == "escape":
                 self.action_hide()
 
-        if isinstance(event, (Input.Changed, TextArea.Changed)):
+        if isinstance(event, Input.Changed):
             # We suppress Changed events from the target widget, so that we don't
             # handle change events as a result of performing a completion.
             self._handle_target_update()
@@ -248,7 +252,7 @@ class AutoComplete(Widget):
         self.styles.display = "block"
 
     def _complete(self, option_index: int) -> None:
-        """Do the completion (i.e. insert the selected item into the target input/textarea).
+        """Do the completion (i.e. insert the selected item into the target input).
 
         This is when the user highlights an option in the dropdown and presses tab or enter.
         """
@@ -266,18 +270,6 @@ class AutoComplete(Widget):
         # as a result of this completion, we can opt to ignore it in `handle_target_updated`
         self.action_hide()
 
-    def yield_characters_before_cursor(
-        self, target: TextArea
-    ) -> Iterator[tuple[str, Location]]:
-        cursor_location = target.cursor_location
-
-        cursor_row, column = cursor_location
-        start = (cursor_row, 0)
-        text = target.get_text_range(start=start, end=cursor_location)
-        for char in reversed(text):
-            column -= 1
-            yield char, (cursor_row, column)
-
     def apply_completion(self, value: str, state: TargetState) -> None:
         """Apply the completion to the target widget.
 
@@ -285,62 +277,34 @@ class AutoComplete(Widget):
         the value the user has chosen from the dropdown list.
         """
         target = self.target
-        if isinstance(target, Input):
-            with self.prevent(Input.Changed, TextArea.Changed):
-                target.value = ""
-                target.insert_text_at_cursor(value)
+        with self.prevent(Input.Changed):
+            target.value = ""
+            target.insert_text_at_cursor(value)
 
-                # We need to rebuild here because we've prevented the Changed events
-                # from being sent to the target widget, meaning AutoComplete won't spot
-                # intercept that message, and would not trigger a rebuild like it normally
-                # does when a Changed event is received.
-                new_target_state = self._get_target_state()
-                self._rebuild_options(
-                    new_target_state, self.get_search_string(new_target_state)
-                )
-        else:  # elif isinstance(target, TextArea):
-            with self.prevent(TextArea.Changed):
-                replacement_range = self.get_text_area_word_bounds_before_cursor(target)
-                target.replace(value, *replacement_range)
-
-    def get_text_area_word_bounds_before_cursor(
-        self, target: TextArea
-    ) -> tuple[Location, Location]:
-        """Get the bounds of the word before the cursor in a TextArea.
-
-        A word is defined as a sequence of alphanumeric characters or underscores,
-        bounded by the start of the line, a space, or a non-alphanumeric character.
-
-        Returns:
-            A tuple containing the start and end positions of the word as (row, column) tuples.
-        """
-        cursor_location = target.cursor_location
-        for char, (row, column) in self.yield_characters_before_cursor(target):
-            if not char.isalnum() and char not in "$_-":
-                return (row, column + 1), cursor_location
-            elif column == 0:
-                return (row, column), cursor_location
-
-        return cursor_location, cursor_location
+            # We need to rebuild here because we've prevented the Changed events
+            # from being sent to the target widget, meaning AutoComplete won't spot
+            # intercept that message, and would not trigger a rebuild like it normally
+            # does when a Changed event is received.
+            new_target_state = self._get_target_state()
+            self._rebuild_options(
+                new_target_state, self.get_search_string(new_target_state)
+            )
 
     @property
-    def target(self) -> Input | TextArea:
+    def target(self) -> Input:
         """The resolved target widget."""
-        if isinstance(self._target, (Input, TextArea)):
+        if isinstance(self._target, Input):
             return self._target
         else:
             target = self.screen.query_one(self._target)
-            assert isinstance(target, (Input, TextArea))
+            assert isinstance(target, Input)
             return target
 
     def _subscribe_to_target(self) -> None:
         """Attempt to subscribe to the target widget, if it's available."""
         target = self.target
         self.watch(target, "has_focus", self._handle_focus_change)
-        if isinstance(target, Input):
-            self.watch(target, "selection", self._align_and_rebuild)
-        else:
-            self.watch(target, "selection", self._align_and_rebuild)
+        self.watch(target, "selection", self._align_and_rebuild)
 
     def _align_and_rebuild(self) -> None:
         self._align_to_target()
@@ -365,16 +329,10 @@ class AutoComplete(Widget):
     def _get_target_state(self) -> TargetState:
         """Get the state of the target widget."""
         target = self.target
-        if isinstance(target, Input):
-            return TargetState(
-                text=target.value,
-                selection=Selection.cursor((0, target.cursor_position)),  # type: ignore
-            )
-        else:
-            return TargetState(
-                text=target.text,
-                selection=target.selection,
-            )
+        return TargetState(
+            text=target.value,
+            cursor_position=target.cursor_position,
+        )
 
     def _handle_focus_change(self, has_focus: bool) -> None:
         """Called when the focus of the target widget changes."""
@@ -385,7 +343,7 @@ class AutoComplete(Widget):
             self._rebuild_options(self._target_state, search_string)
 
     def _handle_target_update(self) -> None:
-        """Called when the state (text or selection) of the target is updated.
+        """Called when the state (text or cursor position) of the target is updated.
 
         Here we align the dropdown to the target, determine if it should be visible,
         and rebuild the options in it.
@@ -448,24 +406,10 @@ class AutoComplete(Widget):
 
         This could be, for example, the text in the target widget, or a substring of that text.
 
-        For Input widgets the default is to use the text in the input, and for TextArea widgets
-        the default is to use the text in the TextArea before the cursor up to the most recent
-        non-alphanumeric character.
-
-        Subclassing AutoComplete to create a custom `get_search_string` method is a way to
-        customise the behaviour of the autocomplete dropdown.
-
         Returns:
             The search string that will be used to filter the dropdown options.
         """
-        if isinstance(self.target, Input):
-            column = target_state.selection.end[1]
-            search_string = target_state.text[:column]
-            return search_string
-        else:
-            start, end = self.get_text_area_word_bounds_before_cursor(self.target)
-            search_string = self.target.get_text_range(start, end)
-            return search_string
+        return target_state.text[: target_state.cursor_position]
 
     def _compute_matches(
         self, target_state: TargetState, search_string: str

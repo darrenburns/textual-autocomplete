@@ -9,7 +9,7 @@ readme = "README.md"
 packages = [{ include = "textual_autocomplete" }]
 dependencies = [
     "textual>=2.0.0",
-    "typing-extensions>=4.5.0"
+    "typing-extensions>=4.5.0",
 ]
 requires-python = ">=3.9.0"
 
@@ -22,6 +22,9 @@ dev-dependencies = [
     "pytest-xdist>=3.6.1",
     "textual-dev",
 ]
+
+[tool.uv.sources]
+textual = { path = "../textual", editable = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["textual_autocomplete"]

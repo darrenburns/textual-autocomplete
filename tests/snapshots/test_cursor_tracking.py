@@ -75,7 +75,3 @@ def test_dropdown_tracks_input_cursor_on_click_and_cursor_prefix_search_string(
         await pilot.click(input_widget, offset=(4, 1))  # Click on the "a"
 
     assert snap_compare(CursorTracking(), run_before=run_before)
-
-
-# TODO: Test that dropdown tracks cursor when scrolling occurs
-# TODO: Test the dropdown tracks cursor when cursor moves via other means
