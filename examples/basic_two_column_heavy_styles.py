@@ -25,9 +25,9 @@ SECTION_COLORS: dict[str, str] = {
 CANDIDATES = [
     DropdownItem(
         Content.styled(
-            header["name"],
+            str(header["name"]),
             style=SECTION_COLORS.get(
-                header.get("section", "default"), SECTION_COLORS["default"]
+                str(header.get("section", "default")), SECTION_COLORS["default"]
             ),
         ),  # Main text to be completed with color based on section
         left_column=Content.from_markup(
