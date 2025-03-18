@@ -166,9 +166,9 @@ Here's what that looks like when applied:
 <img width="226" alt="image" src="https://github.com/user-attachments/assets/3fae3ecf-fdd3-4ff5-ac37-7ef3088c596e" />
 
 By using Textual CSS like in the example above, you can ensure the shades of colors remain
-consistent across different themes.
+consistent across different themes. Here's the same dropdown with the Textual app theme switched to `gruvbox`:
 
-
+<img width="234" alt="image" src="https://github.com/user-attachments/assets/6bc4804d-7a4b-41ab-bba9-5745d87648b9" />
 
 ## Dynamic Data with Callbacks
 
