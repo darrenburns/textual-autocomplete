@@ -172,20 +172,48 @@ consistent across different themes. Here's the same dropdown with the Textual ap
 
 ## Dynamic Data with Callbacks
 
-For more advanced usage, you can provide a callback function to dynamically generate dropdown items:
+Instead of supplying a static list of candidates, you can supply a callback function which returns a list of `DropdownItem` (candidates) that will be searched against.
+
+This callback function will be called anytime the text in the target input widget changes.
+
+The app below displays the length of the text in the input widget in the left column of the dropdown items.
 
 ```python
-def get_candidates(state):
-    search_term = state.text.lower()
-    results = []
-    for item in ALL_ITEMS:
-        if search_term in item.lower():
-            results.append(DropdownItem(item))
-    return results
+from textual.app import App, ComposeResult
+from textual.widgets import Input
 
-# Then in your compose method:
-yield InputAutoComplete(input_widget, candidates=get_candidates)
+from textual_autocomplete import InputAutoComplete
+from textual_autocomplete._autocomplete import DropdownItem, TargetState
+
+
+class DynamicDataApp(App[None]):
+    def compose(self) -> ComposeResult:
+        input_widget = Input()
+        yield input_widget
+        yield InputAutoComplete(input_widget, candidates=self.get_candidates)
+
+    def get_candidates(self, state: TargetState) -> list[DropdownItem]:
+        left = len(state.text)
+        return [
+            DropdownItem(item, left_column=f"{left:>2} ")
+            for item in [
+                "Apple",
+                "Banana",
+                "Cherry",
+                "Orange",
+                "Pineapple",
+                "Strawberry",
+                "Watermelon",
+            ]
+        ]
+
+
+if __name__ == "__main__":
+    app = DynamicDataApp()
+    app.run()
 ```
+
+
 
 ## Events
 
