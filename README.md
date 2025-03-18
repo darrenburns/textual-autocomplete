@@ -161,7 +161,14 @@ The dropdown can be styled using Textual CSS:
     }
 ```
 
+Here's what that looks like when applied:
+
 <img width="226" alt="image" src="https://github.com/user-attachments/assets/3fae3ecf-fdd3-4ff5-ac37-7ef3088c596e" />
+
+By using Textual CSS like in the example above, you can ensure the shades of colors remain
+consistent across different themes.
+
+
 
 ## Dynamic Data with Callbacks
 
