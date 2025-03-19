@@ -263,7 +263,7 @@ Notice the count displayed in the prefix increment and decrement based on the ch
 
 ## Customizing Behavior
 
-If you need custom behavior, `AutoComplete` is can be subclassed.
+If you need custom behavior, `AutoComplete` can be subclassed.
 
 A good example of how to subclass and customize behavior is the `PathAutoComplete` widget, which is a subclass of `AutoComplete`.
 
