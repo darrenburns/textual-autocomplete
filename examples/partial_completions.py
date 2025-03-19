@@ -36,7 +36,6 @@ class FileSystemPathCompletions(App[None]):
             input_widget = Input(placeholder="Enter a path...")
             yield input_widget
         yield PathAutoComplete(target=input_widget, path="../textual")
-        yield Button("Go")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 [project]
 name = "textual-autocomplete"
-version = "4.0.0a0"
+version = "4.0.0"
 description = "Easily add autocomplete dropdowns to your Textual apps."
 authors = [
     { name = "Darren Burns", email = "darrenb900@gmail.com" }
@@ -22,9 +22,6 @@ dev-dependencies = [
     "pytest-xdist>=3.6.1",
     "textual-dev",
 ]
-
-[tool.uv.sources]
-textual = { path = "../textual", editable = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["textual_autocomplete"]

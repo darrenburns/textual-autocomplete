@@ -810,42 +810,21 @@ wheels = [
 [[package]]
 name = "textual"
 version = "2.1.2"
-source = { editable = "../textual" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py", extra = ["linkify", "plugins"] },
     { name = "platformdirs" },
     { name = "rich" },
     { name = "typing-extensions" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "markdown-it-py", extras = ["linkify", "plugins"], specifier = ">=2.1.0" },
-    { name = "platformdirs", specifier = ">=3.6.0,<5" },
-    { name = "rich", specifier = ">=13.3.3" },
-    { name = "tree-sitter", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.23.0" },
-    { name = "tree-sitter-bash", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.23.0" },
-    { name = "tree-sitter-css", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.23.0" },
-    { name = "tree-sitter-go", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.23.0" },
-    { name = "tree-sitter-html", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.23.0" },
-    { name = "tree-sitter-java", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.23.0" },
-    { name = "tree-sitter-javascript", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.23.0" },
-    { name = "tree-sitter-json", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.24.0" },
-    { name = "tree-sitter-markdown", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.3.0" },
-    { name = "tree-sitter-python", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.23.0" },
-    { name = "tree-sitter-regex", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.24.0" },
-    { name = "tree-sitter-rust", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.23.0" },
-    { name = "tree-sitter-sql", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.3.0,<0.3.8" },
-    { name = "tree-sitter-toml", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.6.0" },
-    { name = "tree-sitter-xml", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.7.0" },
-    { name = "tree-sitter-yaml", marker = "python_full_version >= '3.9.0' and extra == 'syntax'", specifier = ">=0.6.0" },
-    { name = "typing-extensions", specifier = ">=4.4.0,<5.0.0" },
+sdist = { url = "https://files.pythonhosted.org/packages/41/62/4af4689dd971ed4fb3215467624016d53550bff1df9ca02e7625eec07f8b/textual-2.1.2.tar.gz", hash = "sha256:aae3f9fde00c7440be00e3c3ac189e02d014f5298afdc32132f93480f9e09146", size = 1596600 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/81/9df1988c908cbba77f10fecb8587496b3dff2838d4510457877a521d87fd/textual-2.1.2-py3-none-any.whl", hash = "sha256:95f37f49e930838e721bba8612f62114d410a3019665b6142adabc14c2fb9611", size = 680148 },
 ]
-provides-extras = ["syntax"]
 
 [[package]]
 name = "textual-autocomplete"
-version = "4.0.0a0"
+version = "4.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "textual" },
@@ -864,7 +843,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "textual", editable = "../textual" },
+    { name = "textual", specifier = ">=2.0.0" },
     { name = "typing-extensions", specifier = ">=4.5.0" },
 ]
 
