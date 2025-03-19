@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import Any, Callable
+from textual.content import Content
 from textual.widgets import Input
 
 from textual_autocomplete import DropdownItem, InputAutoComplete, TargetState
@@ -34,6 +35,8 @@ class PathInputAutoComplete(InputAutoComplete):
         *,
         show_dotfiles: bool = True,
         sort_key: Callable[[PathDropdownItem], Any] = default_path_input_sort_key,
+        folder_prefix: Content = Content("📂"),
+        file_prefix: Content = Content("📄"),
         prevent_default_enter: bool = True,
         prevent_default_tab: bool = True,
         name: str | None = None,
@@ -54,6 +57,8 @@ class PathInputAutoComplete(InputAutoComplete):
         self.path = Path(path) if isinstance(path, str) else path
         self.show_dotfiles = show_dotfiles
         self.sort_key = sort_key
+        self.folder_prefix = folder_prefix
+        self.file_prefix = file_prefix
 
     def get_candidates(self, target_state: TargetState) -> list[DropdownItem]:
         current_input = target_state.text[: target_state.cursor_position]
@@ -73,13 +78,20 @@ class PathInputAutoComplete(InputAutoComplete):
             for entry in entries:
                 # Only include the entry name, not the full path
                 completion = entry.name
+                if not self.show_dotfiles and completion.startswith("."):
+                    continue
                 if entry.is_dir():
                     completion += "/"
                 results.append(PathDropdownItem(completion, path=Path(entry.path)))
 
             results.sort(key=self.sort_key)
+            folder_prefix = self.folder_prefix
+            file_prefix = self.file_prefix
             return [
-                DropdownItem(item.main, prefix="📂" if item.path.is_dir() else "📄")
+                DropdownItem(
+                    item.main,
+                    prefix=folder_prefix if item.path.is_dir() else file_prefix,
+                )
                 for item in results
             ]
 
