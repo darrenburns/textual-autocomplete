@@ -538,7 +538,3 @@ class InputAutoComplete(Widget):
     @property
     def option_list(self) -> AutoCompleteList:
         return self.query_one(AutoCompleteList)
-
-    @on(OptionList.OptionSelected, "AutoCompleteList")
-    def _apply_completion(self, event: OptionList.OptionSelected) -> None:
-        self._complete(event.option_index)

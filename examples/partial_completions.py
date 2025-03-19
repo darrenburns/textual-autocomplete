@@ -20,10 +20,10 @@ class PartialCompletionApp(App[None]):
     CSS = """
     #container {
         align: center middle;
-        background: $surface;
         padding: 2 4;
-        height: 60vh;
-        width: 67vw;
+    }
+    #label {
+        margin-left: 3;
     }
     Input {
         width: 80%;
@@ -32,7 +32,7 @@ class PartialCompletionApp(App[None]):
 
     def compose(self) -> ComposeResult:
         with Container(id="container"):
-            yield Label("Choose a file!")
+            yield Label("Choose a file!", id="label")
             input_widget = Input(placeholder="Enter a path...")
             yield input_widget
         yield PathInputAutoComplete(target=input_widget)
