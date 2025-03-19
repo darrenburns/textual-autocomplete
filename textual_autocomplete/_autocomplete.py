@@ -541,4 +541,5 @@ class InputAutoComplete(Widget):
 
     @on(OptionList.OptionSelected, "AutoCompleteList")
     def _apply_completion(self, event: OptionList.OptionSelected) -> None:
+        # Handles click events on dropdown items.
         self._complete(event.option_index)
