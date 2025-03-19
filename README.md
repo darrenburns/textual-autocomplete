@@ -209,7 +209,7 @@ if __name__ == "__main__":
 
 Here's what that looks like in action:
 
-
+https://github.com/user-attachments/assets/25b80e34-0a35-4962-9024-f2dab7666689
 
 ## Dynamic Data with Callbacks
 
