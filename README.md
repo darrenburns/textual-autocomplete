@@ -2,6 +2,8 @@
 
 A simple autocomplete dropdown library for [Textual](https://github.com/textualize/textual) `Input` widgets.
 
+![autocomplete-readme-header](https://github.com/user-attachments/assets/eda6f78a-fbaa-4a5b-ac1d-223e41f6eabb)
+
 Compatible with **Textual 2.0 and above**.
 
 ## Installation
@@ -28,7 +30,7 @@ class ColorFinder(App):
         # Create a standard Textual input
         text_input = Input(placeholder="Type a color...")
         yield text_input
-        
+
         # Add an autocomplete to the same screen, and pass in the input widget.
         yield AutoComplete(
             text_input,  # Target input widget
@@ -263,7 +265,7 @@ Notice the count displayed in the prefix increment and decrement based on the ch
 
 ## Customizing Behavior
 
-If you need custom behavior, `AutoComplete` is can be subclassed.
+If you need custom behavior, `AutoComplete` can be subclassed.
 
 A good example of how to subclass and customize behavior is the `PathAutoComplete` widget, which is a subclass of `AutoComplete`.
 
