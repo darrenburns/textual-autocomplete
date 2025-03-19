@@ -231,6 +231,7 @@ class AutoComplete(Widget):
             elif event.key == "up":
                 if displayed:
                     event.prevent_default()
+                    event.stop()
                     highlighted = (highlighted - 1) % option_list.option_count
                     option_list.highlighted = highlighted
             elif event.key == "enter":
