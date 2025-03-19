@@ -11,7 +11,7 @@ you could offer a different set of completions based on the new path in the Inpu
 
 from textual.app import App, ComposeResult
 from textual.containers import Container
-from textual.widgets import Input, Label
+from textual.widgets import Button, Input, Label
 
 from textual_autocomplete import PathInputAutoComplete
 
@@ -36,6 +36,7 @@ class PartialCompletionApp(App[None]):
             input_widget = Input(placeholder="Enter a path...")
             yield input_widget
         yield PathInputAutoComplete(target=input_widget)
+        yield Button("Go")
 
 
 if __name__ == "__main__":

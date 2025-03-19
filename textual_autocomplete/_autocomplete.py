@@ -239,6 +239,7 @@ class InputAutoComplete(Widget):
             elif event.key == "tab":
                 if self.prevent_default_tab and displayed:
                     event.prevent_default()
+                    event.stop()
                 self._complete(option_index=highlighted)
             elif event.key == "escape":
                 self.action_hide()
