@@ -2,6 +2,8 @@
 
 A simple autocomplete dropdown library for [Textual](https://github.com/textualize/textual) `Input` widgets.
 
+![autocomplete-readme-header](https://github.com/user-attachments/assets/eda6f78a-fbaa-4a5b-ac1d-223e41f6eabb)
+
 Compatible with **Textual 2.0 and above**.
 
 ## Installation
