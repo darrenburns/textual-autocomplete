@@ -183,6 +183,34 @@ DropdownItem(
 )
 ```
 
+## Completing Paths
+
+`textual-autocomplete` includes a `PathInputAutoComplete` widget that can be used to autocomplete filesystem paths.
+
+```python
+from textual.app import App, ComposeResult
+from textual.containers import Container
+from textual.widgets import Button, Input, Label
+
+from textual_autocomplete import PathInputAutoComplete
+
+class FileSystemPathCompletions(App[None]):
+    def compose(self) -> ComposeResult:
+        yield Label("Choose a file!", id="label")
+        input_widget = Input(placeholder="Enter a path...")
+        yield input_widget
+        yield PathInputAutoComplete(target=input_widget, path="../textual")
+
+
+if __name__ == "__main__":
+    app = FileSystemPathCompletions()
+    app.run()
+```
+
+Here's what that looks like in action:
+
+
+
 ## Dynamic Data with Callbacks
 
 Instead of supplying a static list of candidates, you can supply a callback function which returns a list of `DropdownItem` (candidates) that will be searched against.
