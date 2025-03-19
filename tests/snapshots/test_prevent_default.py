@@ -3,7 +3,7 @@
 from typing import Any
 from textual.app import App, ComposeResult
 from textual.widgets import Button, Input
-from textual_autocomplete import InputAutoComplete
+from textual_autocomplete import AutoComplete
 
 
 class PreventDefaultTab(App[None]):
@@ -18,7 +18,7 @@ class PreventDefaultTab(App[None]):
     def compose(self) -> ComposeResult:
         input = Input(placeholder="Type something...")
         yield input
-        yield InputAutoComplete(
+        yield AutoComplete(
             input,
             candidates=["foo", "bar"],
             prevent_default_tab=self.prevent_default_tab,

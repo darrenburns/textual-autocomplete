@@ -6,7 +6,7 @@ from textual.content import Content
 from textual.widgets import Input
 from textual.cache import LRUCache
 
-from textual_autocomplete import DropdownItem, InputAutoComplete, TargetState
+from textual_autocomplete import DropdownItem, AutoComplete, TargetState
 
 
 class PathDropdownItem(DropdownItem):
@@ -29,7 +29,7 @@ def default_path_input_sort_key(item: PathDropdownItem) -> tuple[bool, bool, str
     return (not item.path.is_dir(), not is_dotfile, name.lower())
 
 
-class PathInputAutoComplete(InputAutoComplete):
+class PathAutoComplete(AutoComplete):
     def __init__(
         self,
         target: Input | str,

@@ -21,7 +21,7 @@ Here's the simplest possible way to add autocomplete to your Textual app:
 ```python
 from textual.app import App, ComposeResult
 from textual.widgets import Input
-from textual_autocomplete import InputAutoComplete, DropdownItem
+from textual_autocomplete import AutoComplete, DropdownItem
 
 class ColorFinder(App):
     def compose(self) -> ComposeResult:
@@ -30,7 +30,7 @@ class ColorFinder(App):
         yield text_input
         
         # Add an autocomplete to the same screen, and pass in the input widget.
-        yield InputAutoComplete(
+        yield AutoComplete(
             text_input,  # Target input widget
             candidates=["Red", "Green", "Blue", "Yellow", "Purple", "Orange"]
         )
@@ -59,7 +59,7 @@ These columns are display-only, and do not influence the search process.
 ```python
 from textual.app import App, ComposeResult
 from textual.widgets import Input
-from textual_autocomplete import InputAutoComplete, DropdownItem
+from textual_autocomplete import AutoComplete, DropdownItem
 
 # Create dropdown items with a left metadata column.
 ITEMS = [
@@ -73,7 +73,7 @@ class LanguageSearcher(App):
     def compose(self) -> ComposeResult:
         text_input = Input(placeholder="Programming language...")
         yield text_input
-        yield InputAutoComplete(text_input, candidates=ITEMS)
+        yield AutoComplete(text_input, candidates=ITEMS)
 
 if __name__ == "__main__":
     app = LanguageSearcher()
@@ -88,7 +88,7 @@ Add rich styling to your metadata columns using [Textual markup](https://textual
 from textual.app import App, ComposeResult
 from textual.content import Content
 from textual.widgets import Input, Label
-from textual_autocomplete import InputAutoComplete, DropdownItem
+from textual_autocomplete import AutoComplete, DropdownItem
 
 # Languages with their popularity rank
 LANGUAGES_WITH_RANK = [
@@ -118,7 +118,7 @@ class LanguageSearcher(App):
         yield Label("Start typing a programming language:")
         text_input = Input(placeholder="Type here...")
         yield text_input
-        yield InputAutoComplete(target=text_input, candidates=CANDIDATES)
+        yield AutoComplete(target=text_input, candidates=CANDIDATES)
 
 if __name__ == "__main__":
     app = LanguageSearcher()
@@ -137,7 +137,7 @@ if __name__ == "__main__":
 The dropdown can be styled using Textual CSS:
 
 ```css
-    InputAutoComplete {
+    AutoComplete {
         /* Customize the dropdown */
         & AutoCompleteList {
             max-height: 6;  /* The number of lines before scrollbars appear */
@@ -185,21 +185,21 @@ DropdownItem(
 
 ## Completing Paths
 
-`textual-autocomplete` includes a `PathInputAutoComplete` widget that can be used to autocomplete filesystem paths.
+`textual-autocomplete` includes a `PathAutoComplete` widget that can be used to autocomplete filesystem paths.
 
 ```python
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.widgets import Button, Input, Label
 
-from textual_autocomplete import PathInputAutoComplete
+from textual_autocomplete import PathAutoComplete
 
 class FileSystemPathCompletions(App[None]):
     def compose(self) -> ComposeResult:
         yield Label("Choose a file!", id="label")
         input_widget = Input(placeholder="Enter a path...")
         yield input_widget
-        yield PathInputAutoComplete(target=input_widget, path="../textual")
+        yield PathAutoComplete(target=input_widget, path="../textual")
 
 
 if __name__ == "__main__":
@@ -211,7 +211,7 @@ Here's what that looks like in action:
 
 https://github.com/user-attachments/assets/25b80e34-0a35-4962-9024-f2dab7666689
 
-`PathInputAutoComplete` has a bunch of parameters that can be used to customize the behavior - check the docstring for more details. It'll also cache directory contents after reading them once - but you can clear the cache if you need to using the `clear_directory_cache` method.
+`PathAutoComplete` has a bunch of parameters that can be used to customize the behavior - check the docstring for more details. It'll also cache directory contents after reading them once - but you can clear the cache if you need to using the `clear_directory_cache` method.
 
 ## Dynamic Data with Callbacks
 
@@ -225,7 +225,7 @@ The app below displays the length of the text in the input widget in the prefix 
 from textual.app import App, ComposeResult
 from textual.widgets import Input
 
-from textual_autocomplete import InputAutoComplete
+from textual_autocomplete import AutoComplete
 from textual_autocomplete._autocomplete import DropdownItem, TargetState
 
 
@@ -233,7 +233,7 @@ class DynamicDataApp(App[None]):
     def compose(self) -> ComposeResult:
         input_widget = Input()
         yield input_widget
-        yield InputAutoComplete(input_widget, candidates=self.candidates_callback)
+        yield AutoComplete(input_widget, candidates=self.candidates_callback)
 
     def candidates_callback(self, state: TargetState) -> list[DropdownItem]:
         left = len(state.text)
@@ -262,13 +262,13 @@ Notice the count displayed in the prefix increment and decrement based on the ch
 
 ## Customizing Behavior
 
-If you need custom behavior, `InputAutoComplete` is can be subclassed.
+If you need custom behavior, `AutoComplete` is can be subclassed.
 
-A good example of how to subclass and customize behavior is the `PathInputAutoComplete` widget, which is a subclass of `InputAutoComplete`.
+A good example of how to subclass and customize behavior is the `PathAutoComplete` widget, which is a subclass of `AutoComplete`.
 
 Some methods you may want to be aware of which you can override:
 
-- `get_candidates`: Return a list of `DropdownItem` objects - called each time the input changes or the cursor position changes. Note that if you're overriding this in a subclass, you'll need to make sure that the `get_candidates` parameter passed into the `InputAutoComplete` constructor is set to `None` - this tells `textual-autocomplete` to use the subclassed method instead of the default.
+- `get_candidates`: Return a list of `DropdownItem` objects - called each time the input changes or the cursor position changes. Note that if you're overriding this in a subclass, you'll need to make sure that the `get_candidates` parameter passed into the `AutoComplete` constructor is set to `None` - this tells `textual-autocomplete` to use the subclassed method instead of the default.
 - `get_search_string`: The string that will be used to filter the candidates. You may wish to only use a portion of the input text to filter the candidates rather than the entire text.
 - `apply_completion`: Apply the completion to the target input widget. Receives the value the user selected from the dropdown and updates the `Input` directly using it's API.
 - `post_completion`: Called when a completion is selected. Called immediately after `apply_completion`. The default behaviour is just to hide the completion dropdown (after performing a completion, we want to immediately hide the dropdown in the default case).

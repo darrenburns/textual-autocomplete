@@ -1,16 +1,16 @@
 from textual_autocomplete._autocomplete import (
-    InputAutoComplete,
+    AutoComplete,
     AutoCompleteList,
     DropdownItem,
     DropdownItemHit,
     TargetState,
 )
 
-from textual_autocomplete._path_autocomplete import PathInputAutoComplete
+from textual_autocomplete._path_autocomplete import PathAutoComplete
 
 __all__ = [
-    "InputAutoComplete",
-    "PathInputAutoComplete",
+    "AutoComplete",
+    "PathAutoComplete",
     "AutoCompleteList",
     "DropdownItem",
     "DropdownItemHit",

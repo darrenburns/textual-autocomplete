@@ -2,7 +2,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Center, VerticalScroll
 from textual.pilot import Pilot
 from textual.widgets import Input
-from textual_autocomplete import InputAutoComplete
+from textual_autocomplete import AutoComplete
 
 
 class CursorTracking(App[None]):
@@ -27,7 +27,7 @@ class CursorTracking(App[None]):
             with Center():
                 yield (input := Input(placeholder="Type here..."))
 
-        yield InputAutoComplete(
+        yield AutoComplete(
             target=input,
             candidates=["foo", "bar", "baz", "qux", "boop"],
         )

@@ -13,7 +13,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.widgets import Button, Input, Label
 
-from textual_autocomplete import PathInputAutoComplete
+from textual_autocomplete import PathAutoComplete
 
 
 class FileSystemPathCompletions(App[None]):
@@ -35,7 +35,7 @@ class FileSystemPathCompletions(App[None]):
             yield Label("Choose a file!", id="label")
             input_widget = Input(placeholder="Enter a path...")
             yield input_widget
-        yield PathInputAutoComplete(target=input_widget, path="../textual")
+        yield PathAutoComplete(target=input_widget, path="../textual")
         yield Button("Go")
 
 

@@ -1,7 +1,7 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Input
 
-from textual_autocomplete import InputAutoComplete
+from textual_autocomplete import AutoComplete
 from textual_autocomplete._autocomplete import DropdownItem, TargetState
 
 
@@ -15,7 +15,7 @@ Input {
     def compose(self) -> ComposeResult:
         input_widget = Input()
         yield input_widget
-        yield InputAutoComplete(input_widget, candidates=self.get_candidates)
+        yield AutoComplete(input_widget, candidates=self.get_candidates)
 
     def get_candidates(self, state: TargetState) -> list[DropdownItem]:
         left = len(state.text)

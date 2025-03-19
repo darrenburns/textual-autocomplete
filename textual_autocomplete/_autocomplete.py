@@ -73,13 +73,13 @@ class AutoCompleteList(OptionList):
     pass
 
 
-class InputAutoComplete(Widget):
+class AutoComplete(Widget):
     BINDINGS = [
         Binding("escape", "hide", "Hide dropdown", show=False),
     ]
 
     DEFAULT_CSS = """\
-    InputAutoComplete {
+    AutoComplete {
         layer: textual-autocomplete;
         height: auto;
         width: auto;
@@ -132,7 +132,7 @@ class InputAutoComplete(Widget):
                 use the selector in `compose` - use it in `on_mount` instead).
             candidates: The candidates to match on, or a function which returns the candidates to match on.
                 If set to None, the candidates will be fetched by directly calling the `get_candidates` method,
-                which is what you'll probably want to do if you're subclassing InputAutoComplete and supplying your
+                which is what you'll probably want to do if you're subclassing AutoComplete and supplying your
                 own custom `get_candidates` method.
             prevent_default_enter: Prevent the default enter behavior. If True, when you select a dropdown option using
                 the enter key, the default behavior (e.g. submitting an Input) will be prevented.
@@ -218,8 +218,9 @@ class InputAutoComplete(Widget):
 
                 # If you press `down` while in an Input and the autocomplete is currently
                 # hidden, then we should show the dropdown.
+                event.prevent_default()
+                event.stop()
                 if displayed:
-                    event.prevent_default()
                     highlighted = (highlighted + 1) % option_list.option_count
                 else:
                     self.display = True
@@ -442,7 +443,7 @@ class InputAutoComplete(Widget):
             return list(candidates)
         elif candidates is None:
             raise NotImplementedError(
-                "You must implement get_candidates in your InputAutoComplete subclass, because candidates is None"
+                "You must implement get_candidates in your AutoComplete subclass, because candidates is None"
             )
         else:
             # candidates is a callable

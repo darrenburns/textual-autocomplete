@@ -3,7 +3,7 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Input
 
-from textual_autocomplete import InputAutoComplete
+from textual_autocomplete import AutoComplete
 
 LANGUAGES = [
     "Python",
@@ -22,7 +22,7 @@ class AutoCompleteExample(App[None]):
         text_input = Input(placeholder="Search for a programming language...")
         yield text_input
 
-        yield InputAutoComplete(
+        yield AutoComplete(
             target=text_input,  # The widget to attach autocomplete to
             candidates=LANGUAGES,  # The list of completion candidates
         )

@@ -4,7 +4,7 @@ from textual.app import App, ComposeResult
 from textual.content import Content
 from textual.widgets import Input, Label
 
-from textual_autocomplete import InputAutoComplete, DropdownItem
+from textual_autocomplete import AutoComplete, DropdownItem
 from examples._headers import headers
 
 # Define a mapping of sections to colors
@@ -44,7 +44,7 @@ class TwoColumnAutoCompleteExample(App[None]):
         text_input = Input(placeholder="Type here...")
         yield text_input
 
-        yield InputAutoComplete(
+        yield AutoComplete(
             target=text_input,  # The widget to attach autocomplete to
             candidates=CANDIDATES,  # The list of completion candidates
         )
