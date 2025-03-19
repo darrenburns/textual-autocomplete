@@ -233,7 +233,6 @@ class InputAutoComplete(Widget):
                     highlighted = (highlighted - 1) % option_list.option_count
                     option_list.highlighted = highlighted
             elif event.key == "enter":
-                print("event in autocomplete:", event)
                 if self.prevent_default_enter and displayed:
                     event.prevent_default()
                 self._complete(option_index=highlighted)
@@ -430,9 +429,7 @@ class InputAutoComplete(Widget):
         # If items is a callable, then it's a factory function that returns the candidates.
         # Otherwise, it's a list of candidates.
         candidates = self.get_candidates(target_state)
-        print(f"candidates: {candidates}")
         matches = self.get_matches(target_state, candidates, search_string)
-        print(f"matches: {matches}")
         return matches
 
     def get_candidates(self, target_state: TargetState) -> list[DropdownItem]:
