@@ -9,7 +9,7 @@ from typing import (
     cast,
 )
 from rich.text import Text
-from textual import events
+from textual import events, on
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.content import Content
@@ -538,3 +538,7 @@ class InputAutoComplete(Widget):
     @property
     def option_list(self) -> AutoCompleteList:
         return self.query_one(AutoCompleteList)
+
+    @on(OptionList.OptionSelected, "AutoCompleteList")
+    def _apply_completion(self, event: OptionList.OptionSelected) -> None:
+        self._complete(event.option_index)
