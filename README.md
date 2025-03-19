@@ -30,7 +30,7 @@ class ColorFinder(App):
         # Create a standard Textual input
         text_input = Input(placeholder="Type a color...")
         yield text_input
-        
+
         # Add an autocomplete to the same screen, and pass in the input widget.
         yield AutoComplete(
             text_input,  # Target input widget
