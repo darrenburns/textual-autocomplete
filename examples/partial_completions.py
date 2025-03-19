@@ -16,7 +16,7 @@ from textual.widgets import Button, Input, Label
 from textual_autocomplete import PathInputAutoComplete
 
 
-class PartialCompletionApp(App[None]):
+class FileSystemPathCompletions(App[None]):
     CSS = """
     #container {
         align: center middle;
@@ -40,5 +40,5 @@ class PartialCompletionApp(App[None]):
 
 
 if __name__ == "__main__":
-    app = PartialCompletionApp()
+    app = FileSystemPathCompletions()
     app.run()
