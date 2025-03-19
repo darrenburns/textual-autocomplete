@@ -41,22 +41,15 @@ class PathInputAutoComplete(InputAutoComplete):
         if "/" in current_input:
             last_slash_index = current_input.rindex("/")
             directory = current_input[:last_slash_index] or "/"
-            prefix = current_input[last_slash_index + 1 :]
         else:
             directory = "."
-            prefix = current_input
-
         try:
             entries = list(os.scandir(directory))
         except OSError:
             return []
         else:
-            filtered_entries = [
-                entry for entry in entries if entry.name.startswith(prefix)
-            ]
-
             results: list[DropdownItem] = []
-            for entry in filtered_entries:
+            for entry in entries:
                 # Only include the entry name, not the full path
                 completion = entry.name
                 if entry.is_dir():
@@ -103,3 +96,11 @@ class PathInputAutoComplete(InputAutoComplete):
     def post_completion(self) -> None:
         if not self.target.value.endswith("/"):
             self.action_hide()
+
+    def should_show_dropdown(self, search_string: str) -> bool:
+        default_behavior = super().should_show_dropdown(search_string)
+        return (
+            default_behavior
+            or (search_string == "" and self.target.value != "")
+            and self.option_list.option_count > 1
+        )

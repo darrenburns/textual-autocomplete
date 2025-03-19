@@ -9,7 +9,7 @@ from typing import (
     cast,
 )
 from rich.text import Text
-from textual import events, on
+from textual import events
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.content import Content
@@ -235,6 +235,7 @@ class InputAutoComplete(Widget):
             elif event.key == "enter":
                 if self.prevent_default_enter and displayed:
                     event.prevent_default()
+                    event.stop()
                 self._complete(option_index=highlighted)
             elif event.key == "tab":
                 if self.prevent_default_tab and displayed:
@@ -343,8 +344,9 @@ class InputAutoComplete(Widget):
         if not has_focus:
             self.action_hide()
         else:
-            search_string = self.get_search_string(self._target_state)
-            self._rebuild_options(self._target_state, search_string)
+            target_state = self._get_target_state()
+            search_string = self.get_search_string(target_state)
+            self._rebuild_options(target_state, search_string)
 
     def _handle_target_update(self) -> None:
         """Called when the state (text or cursor position) of the target is updated.
