@@ -48,6 +48,7 @@ That's it! As you type in the input field, matching options will appear in a dro
 - ⌨️ **Keyboard navigation** - Arrow keys, Tab, Enter, and Escape
 - 🎨 **Rich styling options** - Customizable highlighting and appearance
 - 📝 **Dynamic content** - Supply items as a list or from a callback function
+- 🔍 **Path completions** - Built-in support for filesystem path completions
 
 ## Examples
 
