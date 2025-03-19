@@ -1,20 +1,39 @@
 import os
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Any, Callable
 from textual.widgets import Input
 
 from textual_autocomplete import DropdownItem, InputAutoComplete, TargetState
+
+
+class PathDropdownItem(DropdownItem):
+    def __init__(self, completion: str, path: Path) -> None:
+        super().__init__(completion)
+        self.path = path
+
+
+def default_path_input_sort_key(item: PathDropdownItem) -> tuple[bool, bool, str]:
+    """Sort key function for results within the dropdown.
+
+    Args:
+        item: The PathDropdownItem to get a sort key for.
+
+    Returns:
+        A tuple of (is_dotfile, is_file, lowercase_name) for sorting.
+    """
+    name = item.path.name
+    is_dotfile = name.startswith(".")
+    return (not item.path.is_dir(), not is_dotfile, name.lower())
 
 
 class PathInputAutoComplete(InputAutoComplete):
     def __init__(
         self,
         target: Input | str,
-        candidates: Sequence[DropdownItem | str]
-        | Callable[[TargetState], list[DropdownItem]]
-        | None = None,
+        path: str | Path = ".",
         *,
-        base_path: str | Path = ".",
+        show_dotfiles: bool = True,
+        sort_key: Callable[[PathDropdownItem], Any] = default_path_input_sort_key,
         prevent_default_enter: bool = True,
         prevent_default_tab: bool = True,
         name: str | None = None,
@@ -24,7 +43,7 @@ class PathInputAutoComplete(InputAutoComplete):
     ) -> None:
         super().__init__(
             target,
-            candidates,
+            None,
             prevent_default_enter=prevent_default_enter,
             prevent_default_tab=prevent_default_tab,
             name=name,
@@ -32,31 +51,37 @@ class PathInputAutoComplete(InputAutoComplete):
             classes=classes,
             disabled=disabled,
         )
-        base_path = Path(base_path) if isinstance(base_path, str) else base_path
-        self.base_path = base_path
+        self.path = Path(path) if isinstance(path, str) else path
+        self.show_dotfiles = show_dotfiles
+        self.sort_key = sort_key
 
     def get_candidates(self, target_state: TargetState) -> list[DropdownItem]:
         current_input = target_state.text[: target_state.cursor_position]
 
         if "/" in current_input:
             last_slash_index = current_input.rindex("/")
-            directory = current_input[:last_slash_index] or "/"
+            path_segment = current_input[:last_slash_index] or "/"
+            directory = self.path / path_segment if path_segment != "/" else self.path
         else:
-            directory = "."
+            directory = self.path
         try:
             entries = list(os.scandir(directory))
         except OSError:
             return []
         else:
-            results: list[DropdownItem] = []
+            results: list[PathDropdownItem] = []
             for entry in entries:
                 # Only include the entry name, not the full path
                 completion = entry.name
                 if entry.is_dir():
                     completion += "/"
-                results.append(DropdownItem(completion))
+                results.append(PathDropdownItem(completion, path=Path(entry.path)))
 
-            return results
+            results.sort(key=self.sort_key)
+            return [
+                DropdownItem(item.main, prefix="📂" if item.path.is_dir() else "📄")
+                for item in results
+            ]
 
     def get_search_string(self, target_state: TargetState) -> str:
         """Return only the current path segment for searching in the dropdown."""

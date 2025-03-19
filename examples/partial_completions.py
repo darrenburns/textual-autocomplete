@@ -35,7 +35,7 @@ class PartialCompletionApp(App[None]):
             yield Label("Choose a file!", id="label")
             input_widget = Input(placeholder="Enter a path...")
             yield input_widget
-        yield PathInputAutoComplete(target=input_widget)
+        yield PathInputAutoComplete(target=input_widget, path="../textual")
         yield Button("Go")
 
 
