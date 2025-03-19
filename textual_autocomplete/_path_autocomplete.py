@@ -72,7 +72,6 @@ class PathInputAutoComplete(InputAutoComplete):
         if "/" in current_input:
             last_slash_index = current_input.rindex("/")
             search_string = current_input[last_slash_index + 1 :]
-            print(f"search_string: {search_string}")
             return search_string
         else:
             return current_input
