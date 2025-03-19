@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from textual.app import App, ComposeResult
 from textual.pilot import Pilot
 from textual.widgets import Input
