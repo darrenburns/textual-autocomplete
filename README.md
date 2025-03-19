@@ -211,11 +211,13 @@ Here's what that looks like in action:
 
 https://github.com/user-attachments/assets/25b80e34-0a35-4962-9024-f2dab7666689
 
+`PathInputAutoComplete` has a bunch of parameters that can be used to customize the behavior - check the docstring for more details. It'll also cache directory contents after reading them once - but you can clear the cache if you need to using the `clear_directory_cache` method.
+
 ## Dynamic Data with Callbacks
 
 Instead of supplying a static list of candidates, you can supply a callback function which returns a list of `DropdownItem` (candidates) that will be searched against.
 
-This callback function will be called anytime the text in the target input widget changes.
+This callback function will be called anytime the text in the target input widget changes or the cursor position changes (and since the cursor position changes when the user inserts text, you can expect 2 calls to this function for most keystrokes - cache accordingly if this is a problem).
 
 The app below displays the length of the text in the input widget in the prefix of the dropdown items.
 
@@ -231,9 +233,9 @@ class DynamicDataApp(App[None]):
     def compose(self) -> ComposeResult:
         input_widget = Input()
         yield input_widget
-        yield InputAutoComplete(input_widget, candidates=self.get_candidates)
+        yield InputAutoComplete(input_widget, candidates=self.candidates_callback)
 
-    def get_candidates(self, state: TargetState) -> list[DropdownItem]:
+    def candidates_callback(self, state: TargetState) -> list[DropdownItem]:
         left = len(state.text)
         return [
             DropdownItem(item, prefix=f"{left:>2} ")
@@ -257,6 +259,19 @@ if __name__ == "__main__":
 Notice the count displayed in the prefix increment and decrement based on the character count in the input.
 
 ![Screen Recording 2025-03-18 at 18 26 42](https://github.com/user-attachments/assets/ca0e039b-8ae0-48ac-ba96-9ec936720ded)
+
+## Customizing Behavior
+
+If you need custom behavior, `InputAutoComplete` is can be subclassed.
+
+A good example of how to subclass and customize behavior is the `PathInputAutoComplete` widget, which is a subclass of `InputAutoComplete`.
+
+Some methods you may want to be aware of which you can override:
+
+- `get_candidates`: Return a list of `DropdownItem` objects - called each time the input changes or the cursor position changes. Note that if you're overriding this in a subclass, you'll need to make sure that the `get_candidates` parameter passed into the `InputAutoComplete` constructor is set to `None` - this tells `textual-autocomplete` to use the subclassed method instead of the default.
+- `get_search_string`: The string that will be used to filter the candidates. You may wish to only use a portion of the input text to filter the candidates rather than the entire text.
+- `apply_completion`: Apply the completion to the target input widget. Receives the value the user selected from the dropdown and updates the `Input` directly using it's API.
+- `post_completion`: Called when a completion is selected. Called immediately after `apply_completion`. The default behaviour is just to hide the completion dropdown (after performing a completion, we want to immediately hide the dropdown in the default case).
 
 ## More Examples
 
