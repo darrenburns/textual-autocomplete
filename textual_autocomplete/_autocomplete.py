@@ -80,13 +80,12 @@ class AutoComplete(Widget):
 
     DEFAULT_CSS = """\
     AutoComplete {
-        layer: textual-autocomplete;
         height: auto;
         width: auto;
         max-height: 12;
         display: none;
         background: $surface;
-        position: absolute;
+        overlay: screen;
 
         & AutoCompleteList {
             width: auto;
