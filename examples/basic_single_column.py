@@ -23,6 +23,7 @@ class AutoCompleteExample(App[None]):
         with Container(id="container"):
             text_input = Input(placeholder="Search for a programming language...")
             yield text_input
+
             yield AutoComplete(
                 target=text_input,  # The widget to attach autocomplete to
                 candidates=LANGUAGES,  # The list of completion candidates

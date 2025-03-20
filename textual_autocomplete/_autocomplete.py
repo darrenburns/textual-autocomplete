@@ -86,6 +86,7 @@ class AutoComplete(Widget):
         max-height: 12;
         display: none;
         background: $surface;
+        position: absolute;
 
         & AutoCompleteList {
             width: auto;
@@ -182,12 +183,9 @@ class AutoComplete(Widget):
     def on_mount(self) -> None:
         # Subscribe to the target widget's reactive attributes.
         self.target.message_signal.subscribe(self, self._listen_to_messages)  # type: ignore
-        self.screen.screen_layout_refresh_signal.subscribe(  # type: ignore
-            self,
-            lambda _event: self.call_after_refresh(self._align_to_target),  # type: ignore
-        )
         self._subscribe_to_target()
         self._handle_target_update()
+        self.set_interval(0.2, lambda: self.call_after_refresh(self._align_to_target))
 
     def _listen_to_messages(self, event: events.Event) -> None:
         """Listen to some events of the target widget."""
