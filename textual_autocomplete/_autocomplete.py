@@ -86,8 +86,6 @@ class AutoComplete(Widget):
         max-height: 12;
         display: none;
         background: $surface;
-        position: absolute;
-        offset: 0 0;
 
         & AutoCompleteList {
             width: auto;
@@ -186,7 +184,7 @@ class AutoComplete(Widget):
         self.target.message_signal.subscribe(self, self._listen_to_messages)  # type: ignore
         self.screen.screen_layout_refresh_signal.subscribe(  # type: ignore
             self,
-            lambda _event: self._align_to_target(),  # type: ignore
+            lambda _event: self.call_after_refresh(self._align_to_target),  # type: ignore
         )
         self._subscribe_to_target()
         self._handle_target_update()
@@ -324,20 +322,19 @@ class AutoComplete(Widget):
     def _align_to_target(self) -> None:
         """Align the dropdown to the position of the cursor within
         the target widget, and constrain it to be within the screen."""
-        cursor_x, cursor_y = self.target.cursor_screen_offset
+        x, y = self.target.cursor_screen_offset
         dropdown = self.option_list
-        width, height = dropdown.size
+        width, height = dropdown.outer_size
 
         # Constrain the dropdown within the screen.
-        x, y, _width, _height = Region(
-            cursor_x - 1, cursor_y + 1, width, height
-        ).constrain(
+        x, y, _width, _height = Region(x - 1, y + 1, width, height).constrain(
             "inside",
             "none",
             Spacing.all(0),
-            self.screen.region,
+            self.screen.scrollable_content_region,
         )
         self.absolute_offset = Offset(x, y)
+        self.refresh(layout=True)
 
     def _get_target_state(self) -> TargetState:
         """Get the state of the target widget."""

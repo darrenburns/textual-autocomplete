@@ -29,6 +29,7 @@ CANDIDATES = [DropdownItem(lang) for lang in LANGUAGES]
 class BasicInputAutocomplete(App[None]):
     def compose(self) -> ComposeResult:
         input = Input(placeholder="Type here...")
+        input.cursor_blink = False
         yield input
         yield AutoComplete(
             target=input,

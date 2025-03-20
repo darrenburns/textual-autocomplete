@@ -9,6 +9,7 @@ from textual_autocomplete import AutoComplete
 class StyledAutocomplete(App[None]):
     def compose(self) -> ComposeResult:
         input = Input(placeholder="Search...")
+        input.cursor_blink = False
         yield input
         yield AutoComplete(target=input, candidates=["foo", "bar", "baz", "qux"])
 
