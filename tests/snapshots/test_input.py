@@ -96,6 +96,7 @@ def test_summon_by_pressing_down(snap_compare):
     """We can summon the autocomplete dropdown by pressing the down arrow key."""
 
     async def run_before(pilot: Pilot[None]) -> None:
+        await pilot.pause()
         await pilot.press("down")
 
     assert snap_compare(BasicInputAutocomplete(), run_before=run_before)
