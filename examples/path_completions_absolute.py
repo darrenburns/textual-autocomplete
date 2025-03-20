@@ -9,6 +9,7 @@ of the path based on the current content of the Input. Then, when the user selec
 you could offer a different set of completions based on the new path in the Input.
 """
 
+from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.widgets import Input, Label
@@ -19,7 +20,6 @@ from textual_autocomplete import PathAutoComplete
 class FileSystemPathCompletions(App[None]):
     CSS = """
     #container {
-        align: center middle;
         padding: 2 4;
     }
     #label {
@@ -35,7 +35,7 @@ class FileSystemPathCompletions(App[None]):
             yield Label("Choose a file!", id="label")
             input_widget = Input(placeholder="Enter a path...")
             yield input_widget
-        yield PathAutoComplete(target=input_widget, path="../textual")
+            yield PathAutoComplete(target=input_widget, path=Path.cwd())
 
 
 if __name__ == "__main__":

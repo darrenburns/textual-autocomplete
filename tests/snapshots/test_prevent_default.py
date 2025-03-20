@@ -19,6 +19,7 @@ class PreventDefaultTab(App[None]):
 
     def compose(self) -> ComposeResult:
         input = Input(placeholder="Type something...")
+        input.cursor_blink = False
         yield input
         yield AutoComplete(
             input,

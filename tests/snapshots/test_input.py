@@ -29,6 +29,7 @@ CANDIDATES = [DropdownItem(lang) for lang in LANGUAGES]
 class BasicInputAutocomplete(App[None]):
     def compose(self) -> ComposeResult:
         input = Input(placeholder="Type here...")
+        input.cursor_blink = False
         yield input
         yield AutoComplete(
             target=input,
@@ -95,6 +96,7 @@ def test_summon_by_pressing_down(snap_compare):
     """We can summon the autocomplete dropdown by pressing the down arrow key."""
 
     async def run_before(pilot: Pilot[None]) -> None:
+        await pilot.pause()
         await pilot.press("down")
 
     assert snap_compare(BasicInputAutocomplete(), run_before=run_before)
@@ -209,10 +211,13 @@ def test_multiple_autocomplete_dropdowns_on_a_single_input(snap_compare):
 
     class MultipleAutocompleteDropdowns(App[None]):
         def compose(self) -> ComposeResult:
-            yield (input1 := Input(placeholder="Type here..."))
-            yield AutoComplete(target=input1, candidates=LANGUAGES)
+            input_widget = Input(placeholder="Type here...")
+            input_widget.cursor_blink = False
+            yield input_widget
+
+            yield AutoComplete(target=input_widget, candidates=LANGUAGES)
             yield AutoComplete(
-                target=input1,
+                target=input_widget,
                 candidates=["foo", "bar", "java", "javas", "javassss", "jajaja"],
             )
 
@@ -229,10 +234,16 @@ def test_multiple_autocomplete_dropdowns_on_same_screen(snap_compare):
 
     class MultipleAutocompleteDropdowns(App[None]):
         def compose(self) -> ComposeResult:
-            yield (input1 := Input(placeholder="Type here..."))
+            input_widget = Input(placeholder="Type here...")
+            input_widget.cursor_blink = False
+            yield input_widget
+
             # Setup with strings...
-            yield AutoComplete(target=input1, candidates=LANGUAGES)
-            yield (input2 := Input(placeholder="Also type here..."))
+            yield AutoComplete(target=input_widget, candidates=LANGUAGES)
+            input2 = Input(placeholder="Also type here...")
+            input2.cursor_blink = False
+            yield input2
+
             # ...and with DropdownItems...
             yield AutoComplete(target=input2, candidates=CANDIDATES)
 

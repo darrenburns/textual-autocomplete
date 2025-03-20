@@ -14,7 +14,7 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.content import Content
 from textual.css.query import NoMatches
-from textual.geometry import Region, Spacing
+from textual.geometry import Offset, Region, Spacing
 from textual.style import Style
 from textual.widget import Widget
 from textual.widgets import Input, OptionList
@@ -80,12 +80,12 @@ class AutoComplete(Widget):
 
     DEFAULT_CSS = """\
     AutoComplete {
-        layer: textual-autocomplete;
         height: auto;
         width: auto;
         max-height: 12;
         display: none;
         background: $surface;
+        overlay: screen;
 
         & AutoCompleteList {
             width: auto;
@@ -182,12 +182,9 @@ class AutoComplete(Widget):
     def on_mount(self) -> None:
         # Subscribe to the target widget's reactive attributes.
         self.target.message_signal.subscribe(self, self._listen_to_messages)  # type: ignore
-        self.screen.screen_layout_refresh_signal.subscribe(  # type: ignore
-            self,
-            lambda _event: self._align_to_target(),  # type: ignore
-        )
         self._subscribe_to_target()
         self._handle_target_update()
+        self.set_interval(0.2, lambda: self.call_after_refresh(self._align_to_target))
 
     def _listen_to_messages(self, event: events.Event) -> None:
         """Listen to some events of the target widget."""
@@ -231,6 +228,7 @@ class AutoComplete(Widget):
             elif event.key == "up":
                 if displayed:
                     event.prevent_default()
+                    event.stop()
                     highlighted = (highlighted - 1) % option_list.option_count
                     option_list.highlighted = highlighted
             elif event.key == "enter":
@@ -321,16 +319,19 @@ class AutoComplete(Widget):
     def _align_to_target(self) -> None:
         """Align the dropdown to the position of the cursor within
         the target widget, and constrain it to be within the screen."""
-        cursor_x, cursor_y = self.target.cursor_screen_offset
+        x, y = self.target.cursor_screen_offset
         dropdown = self.option_list
-        width, height = dropdown.size
-        x, y, _width, _height = Region(
-            cursor_x,
-            cursor_y + 1,
-            width,
-            height,
-        ).constrain("inside", "none", Spacing.all(2), self.screen.region)
-        self.styles.offset = max(x - 1, 0), y
+        width, height = dropdown.outer_size
+
+        # Constrain the dropdown within the screen.
+        x, y, _width, _height = Region(x - 1, y + 1, width, height).constrain(
+            "inside",
+            "none",
+            Spacing.all(0),
+            self.screen.scrollable_content_region,
+        )
+        self.absolute_offset = Offset(x, y)
+        self.refresh(layout=True)
 
     def _get_target_state(self) -> TargetState:
         """Get the state of the target widget."""

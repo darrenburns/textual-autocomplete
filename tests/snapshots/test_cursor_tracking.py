@@ -27,7 +27,9 @@ class CursorTracking(App[None]):
     def compose(self) -> ComposeResult:
         with VerticalScroll(id="scrollable", can_focus=False):
             with Center():
-                yield (input := Input(placeholder="Type here..."))
+                input = Input(placeholder="Type here...")
+                input.cursor_blink = False
+                yield input
 
         yield AutoComplete(
             target=input,
