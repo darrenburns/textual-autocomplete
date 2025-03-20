@@ -185,7 +185,6 @@ class AutoComplete(Widget):
         self.target.message_signal.subscribe(self, self._listen_to_messages)  # type: ignore
         self._subscribe_to_target()
         self._handle_target_update()
-        self._align_to_target()
         self.set_interval(0.2, lambda: self.call_after_refresh(self._align_to_target))
 
     def _listen_to_messages(self, event: events.Event) -> None:
