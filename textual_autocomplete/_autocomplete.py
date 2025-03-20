@@ -14,7 +14,7 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.content import Content
 from textual.css.query import NoMatches
-from textual.geometry import Region, Spacing
+from textual.geometry import Offset, Region, Spacing
 from textual.style import Style
 from textual.widget import Widget
 from textual.widgets import Input, OptionList
@@ -86,6 +86,8 @@ class AutoComplete(Widget):
         max-height: 12;
         display: none;
         background: $surface;
+        position: absolute;
+        offset: 0 0;
 
         & AutoCompleteList {
             width: auto;
@@ -325,13 +327,17 @@ class AutoComplete(Widget):
         cursor_x, cursor_y = self.target.cursor_screen_offset
         dropdown = self.option_list
         width, height = dropdown.size
+
+        # Constrain the dropdown within the screen.
         x, y, _width, _height = Region(
-            cursor_x,
-            cursor_y + 1,
-            width,
-            height,
-        ).constrain("inside", "none", Spacing.all(2), self.screen.region)
-        self.styles.offset = max(x - 1, 0), y
+            cursor_x - 1, cursor_y + 1, width, height
+        ).constrain(
+            "inside",
+            "none",
+            Spacing.all(0),
+            self.screen.region,
+        )
+        self.absolute_offset = Offset(x, y)
 
     def _get_target_state(self) -> TargetState:
         """Get the state of the target widget."""
