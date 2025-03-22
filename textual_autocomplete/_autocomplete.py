@@ -242,6 +242,9 @@ class AutoComplete(Widget):
                     event.stop()
                 self._complete(option_index=highlighted)
             elif event.key == "escape":
+                if displayed:
+                    event.prevent_default()
+                    event.stop()
                 self.action_hide()
 
         if isinstance(event, Input.Changed):
