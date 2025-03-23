@@ -270,7 +270,8 @@ class AutoComplete(Widget):
         highlighted = option_index
         option = cast(DropdownItem, option_list.get_option_at_index(highlighted))
         highlighted_value = option.value
-        self.apply_completion(highlighted_value, self._get_target_state())
+        with self.prevent(Input.Changed):
+            self.apply_completion(highlighted_value, self._get_target_state())
         self.post_completion()
 
     def post_completion(self) -> None:
@@ -284,18 +285,17 @@ class AutoComplete(Widget):
         the value the user has chosen from the dropdown list.
         """
         target = self.target
-        with self.prevent(Input.Changed):
-            target.value = ""
-            target.insert_text_at_cursor(value)
+        target.value = ""
+        target.insert_text_at_cursor(value)
 
-            # We need to rebuild here because we've prevented the Changed events
-            # from being sent to the target widget, meaning AutoComplete won't spot
-            # intercept that message, and would not trigger a rebuild like it normally
-            # does when a Changed event is received.
-            new_target_state = self._get_target_state()
-            self._rebuild_options(
-                new_target_state, self.get_search_string(new_target_state)
-            )
+        # We need to rebuild here because we've prevented the Changed events
+        # from being sent to the target widget, meaning AutoComplete won't spot
+        # intercept that message, and would not trigger a rebuild like it normally
+        # does when a Changed event is received.
+        new_target_state = self._get_target_state()
+        self._rebuild_options(
+            new_target_state, self.get_search_string(new_target_state)
+        )
 
     @property
     def target(self) -> Input:
