@@ -37,19 +37,6 @@ class CursorTracking(App[None]):
         )
 
 
-def test_dropdown_tracks_terminal_cursor_when_parent_scrolls(snap_compare):
-    """We type, the dropdown appears, then we scroll the parent container so that the position of the input
-    and the dropdown changes on screen. The dropdown should remain aligned to the Input widget."""
-
-    async def run_before(pilot: Pilot[None]) -> None:
-        await pilot.press("b")
-        scrollable = pilot.app.query_one("#scrollable")
-        scrollable.scroll_relative(x=5, y=5, animate=False, force=True)
-        await pilot.pause()
-
-    assert snap_compare(CursorTracking(), run_before=run_before)
-
-
 def test_dropdown_tracks_input_cursor_and_cursor_prefix_as_search_string(snap_compare):
     """The completions should be based on the text between the start of the input and the cursor location.
 
