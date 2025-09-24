@@ -30,3 +30,11 @@ jobs:
       - name: Run Tests
         run: |
           uv run pytest tests/ 
+
+      - name: Upload snapshot report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot_report_textual_autocomplete
+          path: snapshot_report.html
+          overwrite: true
