@@ -19,7 +19,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: "0.6.3"
-          enable-cache: true
           
       - name: Set up Python
         run: uv python install 3.9
@@ -30,3 +29,11 @@ jobs:
       - name: Run Tests
         run: |
           uv run pytest tests/ 
+
+      - name: Upload snapshot report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot_report_textual_autocomplete
+          path: snapshot_report.html
+          overwrite: true

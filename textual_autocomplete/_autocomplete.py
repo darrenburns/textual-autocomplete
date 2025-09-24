@@ -174,6 +174,9 @@ class AutoComplete(Widget):
         self._fuzzy_search = FuzzySearch()
         """The default implementation used by AutoComplete.match."""
 
+        self._previous_terminal_cursor_position = (0, 0)
+        """Tracks the last known cursor position in the terminal."""
+
     def compose(self) -> ComposeResult:
         option_list = AutoCompleteList()
         option_list.can_focus = False
@@ -184,7 +187,19 @@ class AutoComplete(Widget):
         self.target.message_signal.subscribe(self, self._listen_to_messages)  # type: ignore
         self._subscribe_to_target()
         self._handle_target_update()
-        self.set_interval(0.2, lambda: self.call_after_refresh(self._align_to_target))
+
+        def _realign(_=None) -> None:
+            # Only realign if the cursor position has changed (the cursor position is
+            # in screen-space, so if it remains the same, the autocomplete does not need
+            # to be realigned).
+            if (
+                self.is_attached
+                and self._previous_terminal_cursor_position != self.app.cursor_position
+            ):
+                self._align_to_target()
+                self._previous_terminal_cursor_position = self.app.cursor_position
+
+        self.screen.screen_layout_refresh_signal.subscribe(self, _realign)
 
     def _listen_to_messages(self, event: events.Event) -> None:
         """Listen to some events of the target widget."""
@@ -334,7 +349,6 @@ class AutoComplete(Widget):
             self.screen.scrollable_content_region,
         )
         self.absolute_offset = Offset(x, y)
-        self.refresh(layout=True)
 
     def _get_target_state(self) -> TargetState:
         """Get the state of the target widget."""

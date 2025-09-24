@@ -1,6 +1,6 @@
 [project]
 name = "textual-autocomplete"
-version = "4.0.5"
+version = "4.0.6"
 description = "Easily add autocomplete dropdowns to your Textual apps."
 authors = [
     { name = "Darren Burns", email = "darrenb900@gmail.com" }
