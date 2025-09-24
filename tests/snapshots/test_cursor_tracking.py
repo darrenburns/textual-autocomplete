@@ -47,6 +47,7 @@ def test_dropdown_tracks_input_cursor_and_cursor_prefix_as_search_string(snap_co
     async def run_before(pilot: Pilot[None]) -> None:
         await pilot.press(*"ba")  # Type "ba"
         await pilot.press("left")  # Move the cursor back one cell
+        await pilot.pause()
 
     assert snap_compare(CursorTracking(), run_before=run_before)
 
@@ -64,5 +65,6 @@ def test_dropdown_tracks_input_cursor_on_click_and_cursor_prefix_search_string(
         await pilot.press(*"ba")  # Type "ba"
         input_widget = pilot.app.query_one(Input)
         await pilot.click(input_widget, offset=(4, 1))  # Click on the "a"
+        await pilot.pause()
 
     assert snap_compare(CursorTracking(), run_before=run_before)
