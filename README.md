@@ -271,7 +271,7 @@ A good example of how to subclass and customize behavior is the `PathAutoComplet
 
 Some methods you may want to be aware of which you can override:
 
-- `get_candidates`: Return a list of `DropdownItem` objects - called each time the input changes or the cursor position changes. Note that if you're overriding this in a subclass, you'll need to make sure that the `get_candidates` parameter passed into the `AutoComplete` constructor is set to `None` - this tells `textual-autocomplete` to use the subclassed method instead of the default.
+- `get_candidates`: Return a list of `DropdownItem` objects - called each time the input changes or the cursor position changes. Note that if you're overriding this in a subclass, you'll need to make sure that the `candidates` parameter passed into the `AutoComplete` constructor is set to `None` - this tells `textual-autocomplete` to use the subclassed method instead of the default.
 - `get_search_string`: The string that will be used to filter the candidates. You may wish to only use a portion of the input text to filter the candidates rather than the entire text.
 - `apply_completion`: Apply the completion to the target input widget. Receives the value the user selected from the dropdown and updates the `Input` directly using it's API.
 - `post_completion`: Called when a completion is selected. Called immediately after `apply_completion`. The default behaviour is just to hide the completion dropdown (after performing a completion, we want to immediately hide the dropdown in the default case).
