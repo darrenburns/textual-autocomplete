@@ -8,7 +8,6 @@ from typing import (
     Sequence,
     cast,
 )
-from rich.text import Text
 from textual import events, on
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -218,13 +217,8 @@ class AutoComplete(Widget):
                 # Check if there's only one item and it matches the search string
                 if option_list.option_count == 1:
                     search_string = self.get_search_string(self._get_target_state())
-                    first_option = option_list.get_option_at_index(0).prompt
-                    text_from_option = (
-                        first_option.plain
-                        if isinstance(first_option, Text)
-                        else first_option
-                    )
-                    if text_from_option == search_string:
+                    first_option = cast(DropdownItem, option_list.get_option_at_index(0))
+                    if first_option.value == search_string:
                         # Don't prevent default behavior in this case
                         return
 
@@ -404,11 +398,8 @@ class AutoComplete(Widget):
         if len(search_string) == 0 or option_count == 0:
             return False
         elif option_count == 1:
-            first_option = option_list.get_option_at_index(0).prompt
-            text_from_option = (
-                first_option.plain if isinstance(first_option, Text) else first_option
-            )
-            return text_from_option != search_string
+            first_option = cast(DropdownItem, option_list.get_option_at_index(0))
+            return first_option.value != search_string
         else:
             return True
 
